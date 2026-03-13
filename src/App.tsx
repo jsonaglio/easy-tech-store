@@ -119,7 +119,7 @@ const PRODUCTS: Product[] = [
       'Pro': '/Playstation 5/PS5-Pro.jpg'
     },
     storagePrices: {
-      'Slim Digital': 3399.90,
+      'Slim Digital': 3599.90,
       'Mídia Física': 3929.90,
       'Pro': 5659.90
     },
