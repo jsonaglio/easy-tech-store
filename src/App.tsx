@@ -8,14 +8,17 @@ import {
   Smartphone, 
   Search, 
   ChevronRight, 
+  ChevronLeft,
   Check, 
   X, 
   MessageCircle,
+  Instagram,
   Filter,
   ArrowRight,
   Laptop,
   Tablet,
-  Cpu
+  Cpu,
+  Menu
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -55,6 +58,46 @@ const PRODUCTS: Product[] = [
     storagePrices: {
       '256 GB': 5299,
       '512 GB': 7599
+    },
+    category: 'iPhone',
+    note: 'Valores para condição de pagamento à vista. Consulte nossa disponibilidade de cores e opções de parcelamento com nossos consultores pelo botão do WhatsApp.'
+  },
+  {
+    id: '22',
+    model: 'iPhone 17 Pro',
+    description: 'O ápice da performance com o chip A19 Pro e sistema de câmera tripla.',
+    basePrice: 8399.90,
+    image: '/17PM/17PM-silver.jpg',
+    colors: ['Silver', 'Orange', 'Deep Blue'],
+    colorImages: {
+      'Silver': '/17PM/17PM-silver.jpg',
+      'Orange': '/17PM/17PM-Laranja.jpg',
+      'Deep Blue': '/17PM/i17PM - Deep Blue.jpg'
+    },
+    storage: ['256 GB', '512 GB'],
+    storagePrices: {
+      '256 GB': 8399.90,
+      '512 GB': 9699.90
+    },
+    category: 'iPhone',
+    note: 'Valores para condição de pagamento à vista. Consulte nossa disponibilidade de cores e opções de parcelamento com nossos consultores pelo botão do WhatsApp.'
+  },
+  {
+    id: '23',
+    model: 'iPhone 17 Pro Max',
+    description: 'A maior tela e a melhor bateria da linha iPhone 17.',
+    basePrice: 9499.90,
+    image: '/17PM/17PM-silver.jpg',
+    colors: ['Silver', 'Orange', 'Deep Blue'],
+    colorImages: {
+      'Silver': '/17PM/17PM-silver.jpg',
+      'Orange': '/17PM/17PM-Laranja.jpg',
+      'Deep Blue': '/17PM/i17PM - Deep Blue.jpg'
+    },
+    storage: ['256 GB', '512 GB'],
+    storagePrices: {
+      '256 GB': 9499.90,
+      '512 GB': 10999.90
     },
     category: 'iPhone',
     note: 'Valores para condição de pagamento à vista. Consulte nossa disponibilidade de cores e opções de parcelamento com nossos consultores pelo botão do WhatsApp.'
@@ -357,18 +400,51 @@ const PRODUCTS: Product[] = [
 
 const DynamicBanner = ({ products, onSelect }: { products: Product[], onSelect: (p: Product) => void }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const featuredProducts = products.slice(0, 5); // Show first 5 products as featured
+  const featuredProducts = products.slice(0, 4); // Show first 4 products as featured
+  
+  // Add Instagram and Services as special slides
+  const slides = [
+    ...featuredProducts.map(p => ({ type: 'product' as const, data: p })),
+    { 
+      type: 'services' as const,
+      data: {
+        title: 'Assistência & Montagem',
+        subtitle: 'Serviços Premium',
+        description: 'Assistência técnica especializada para Smartphones, PCs e Consoles. Montagem de PCs Gamer e venda de periféricos.',
+        items: [
+          'Assistência Técnica Premium',
+          'Periféricos & Acessórios',
+          'Montagem de PCs Especializada'
+        ]
+      }
+    },
+    { 
+      type: 'instagram' as const, 
+      data: {
+        title: 'Siga-nos no Instagram',
+        handle: '@easytechstorers',
+        description: 'Fique por dentro de todas as novidades, unboxings e ofertas exclusivas em tempo real.',
+        image: '/logos/Instagram.PNG'
+      }
+    }
+  ];
+
+  const nextSlide = () => {
+    setCurrentIndex((prev) => (prev + 1) % slides.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentIndex((prev) => (prev - 1 + slides.length) % slides.length);
+  };
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % featuredProducts.length);
-    }, 5000);
+    const timer = setInterval(nextSlide, 8000);
     return () => clearInterval(timer);
-  }, [featuredProducts.length]);
+  }, [slides.length]);
 
   return (
     <section className="mb-16 relative group">
-      <div className="bg-zinc-900 rounded-[3rem] text-white relative overflow-hidden border border-zinc-800 min-h-[450px] md:min-h-[500px] flex items-center">
+      <div className="bg-zinc-900 rounded-[3rem] text-white relative overflow-hidden border border-zinc-800 min-h-[450px] md:min-h-[550px] flex items-center">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentIndex}
@@ -376,60 +452,186 @@ const DynamicBanner = ({ products, onSelect }: { products: Product[], onSelect: 
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
-            className="w-full p-12 md:p-20 relative z-10 flex flex-col md:flex-row items-center gap-12"
+            className="w-full p-8 md:p-20 relative z-10 flex flex-col md:flex-row items-center gap-12"
           >
-            <div className="max-w-2xl flex-1">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-vibrant-green/10 border border-vibrant-green/20 rounded-full text-vibrant-green text-[10px] font-bold uppercase tracking-widest mb-6">
-                <span className="w-1.5 h-1.5 bg-vibrant-green rounded-full animate-pulse"></span>
-                Destaque: {featuredProducts[currentIndex].category}
-              </div>
-              <h2 className="text-5xl md:text-7xl font-bold mb-6 leading-[1.1] font-display tracking-tight">
-                {featuredProducts[currentIndex].model}
-              </h2>
-              <p className="text-zinc-500 text-lg md:text-xl mb-10 max-w-lg line-clamp-2">
-                {featuredProducts[currentIndex].description}
-              </p>
-              <div className="flex flex-wrap gap-4">
-                <button 
-                  onClick={() => onSelect(featuredProducts[currentIndex])}
-                  className="bg-vibrant-green text-black px-8 py-4 rounded-2xl font-bold hover:bg-vibrant-green/80 transition-all flex items-center gap-2 shadow-lg shadow-vibrant-green/10"
-                >
-                  Ver Detalhes <ChevronRight size={20} />
-                </button>
-                <button 
-                  onClick={() => {
-                    const el = document.getElementById('catalog');
-                    el?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className="bg-zinc-800 text-white px-8 py-4 rounded-2xl font-bold hover:bg-zinc-700 transition-all border border-zinc-700"
-                >
-                  Explorar Tudo
-                </button>
-              </div>
-            </div>
-            <div className="flex-1 flex justify-center items-center">
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.2, duration: 0.5 }}
-                className="relative"
-              >
-                <img 
-                  src={featuredProducts[currentIndex].image} 
-                  alt={featuredProducts[currentIndex].model} 
-                  className="w-full max-w-sm md:max-w-md h-auto object-contain drop-shadow-[0_0_50px_rgba(0,255,65,0.15)] rounded-3xl" 
-                  referrerPolicy="no-referrer"
-                />
-                {/* Decorative glow behind image */}
-                <div className="absolute inset-0 bg-vibrant-green/5 blur-[80px] -z-10 rounded-full"></div>
-              </motion.div>
-            </div>
+            {slides[currentIndex].type === 'product' ? (
+              <>
+                <div className="max-w-2xl flex-1 text-center md:text-left">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-vibrant-green/10 border border-vibrant-green/20 rounded-full text-vibrant-green text-[10px] font-bold uppercase tracking-widest mb-6">
+                    <span className="w-1.5 h-1.5 bg-vibrant-green rounded-full animate-pulse"></span>
+                    Destaque: {(slides[currentIndex].data as Product).category}
+                  </div>
+                  <h2 className="text-4xl md:text-7xl font-bold mb-6 leading-[1.1] font-display tracking-tight">
+                    {(slides[currentIndex].data as Product).model}
+                  </h2>
+                  <p className="text-zinc-500 text-lg md:text-xl mb-10 max-w-lg line-clamp-2 mx-auto md:mx-0">
+                    {(slides[currentIndex].data as Product).description}
+                  </p>
+                  <div className="flex flex-wrap gap-4 justify-center md:justify-start">
+                    <button 
+                      onClick={() => onSelect(slides[currentIndex].data as Product)}
+                      className="bg-vibrant-green text-black px-8 py-4 rounded-2xl font-bold hover:bg-vibrant-green/80 transition-all flex items-center gap-2 shadow-lg shadow-vibrant-green/10"
+                    >
+                      Ver Detalhes <ChevronRight size={20} />
+                    </button>
+                    <button 
+                      onClick={() => {
+                        const el = document.getElementById('catalog');
+                        el?.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className="bg-zinc-800 text-white px-8 py-4 rounded-2xl font-bold hover:bg-zinc-700 transition-all border border-zinc-700"
+                    >
+                      Explorar Tudo
+                    </button>
+                  </div>
+                </div>
+                <div className="flex-1 flex justify-center items-center">
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.2, duration: 0.5 }}
+                    className="relative"
+                  >
+                    <img 
+                      src={(slides[currentIndex].data as Product).image} 
+                      alt={(slides[currentIndex].data as Product).model} 
+                      className="w-full max-w-[280px] md:max-w-md h-auto object-contain drop-shadow-[0_0_50px_rgba(0,255,65,0.15)] rounded-3xl" 
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-0 bg-vibrant-green/5 blur-[80px] -z-10 rounded-full"></div>
+                  </motion.div>
+                </div>
+              </>
+            ) : slides[currentIndex].type === 'services' ? (
+              <>
+                <div className="max-w-2xl flex-1 text-center md:text-left">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-400 text-[10px] font-bold uppercase tracking-widest mb-6">
+                    <Cpu size={12} />
+                    {slides[currentIndex].data.subtitle}
+                  </div>
+                  <h2 className="text-4xl md:text-7xl font-bold mb-6 leading-[1.1] font-display tracking-tight">
+                    {slides[currentIndex].data.title}
+                  </h2>
+                  <p className="text-zinc-500 text-lg md:text-xl mb-10 max-w-lg mx-auto md:mx-0">
+                    {slides[currentIndex].data.description}
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
+                    {slides[currentIndex].data.items.map((item: string) => (
+                      <div key={item} className="flex items-center gap-3 text-zinc-300 text-sm">
+                        <div className="w-5 h-5 rounded-full bg-vibrant-green/20 flex items-center justify-center text-vibrant-green">
+                          <Check size={12} />
+                        </div>
+                        {item}
+                      </div>
+                    ))}
+                  </div>
+                  <button 
+                    onClick={() => window.open('https://wa.me/5554991370566?text=Olá! Gostaria de saber mais sobre os serviços de assistência e montagem.', '_blank')}
+                    className="bg-white text-black px-8 py-4 rounded-2xl font-bold hover:bg-zinc-200 transition-all flex items-center gap-2 shadow-xl shadow-white/5 mx-auto md:mx-0"
+                  >
+                    Solicitar Orçamento <MessageCircle size={20} />
+                  </button>
+                </div>
+                <div className="flex-1 flex justify-center items-center">
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.2, duration: 0.5 }}
+                    className="relative grid grid-cols-2 gap-4"
+                  >
+                    <div className="space-y-4">
+                      <div className="bg-zinc-800/50 p-6 rounded-[2rem] border border-zinc-700/50 backdrop-blur-sm">
+                        <Smartphone className="text-vibrant-green mb-4" size={32} />
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Smartphones</p>
+                      </div>
+                      <div className="bg-zinc-800/50 p-6 rounded-[2rem] border border-zinc-700/50 backdrop-blur-sm">
+                        <Cpu className="text-blue-400 mb-4" size={32} />
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">PC Gamer</p>
+                      </div>
+                    </div>
+                    <div className="pt-8 space-y-4">
+                      <div className="bg-zinc-800/50 p-6 rounded-[2rem] border border-zinc-700/50 backdrop-blur-sm">
+                        <Laptop className="text-purple-400 mb-4" size={32} />
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Notebooks</p>
+                      </div>
+                      <div className="bg-zinc-800/50 p-6 rounded-[2rem] border border-zinc-700/50 backdrop-blur-sm">
+                        <Tablet className="text-orange-400 mb-4" size={32} />
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Consoles</p>
+                      </div>
+                    </div>
+                    {/* Decorative glow */}
+                    <div className="absolute inset-0 bg-blue-500/5 blur-[100px] -z-10 rounded-full"></div>
+                  </motion.div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="max-w-2xl flex-1 text-center md:text-left">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-pink-500/10 border border-pink-500/20 rounded-full text-pink-500 text-[10px] font-bold uppercase tracking-widest mb-6">
+                    <Instagram size={12} />
+                    Social Media
+                  </div>
+                  <h2 className="text-4xl md:text-7xl font-bold mb-6 leading-[1.1] font-display tracking-tight">
+                    Siga-nos no <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500">Instagram</span>
+                  </h2>
+                  <p className="text-zinc-400 text-xl font-bold mb-2">@easytechstorers</p>
+                  <p className="text-zinc-500 text-lg mb-10 max-w-lg mx-auto md:mx-0">
+                    {slides[currentIndex].data.description}
+                  </p>
+                  <button 
+                    onClick={() => window.open('https://www.instagram.com/easytechstorers', '_blank')}
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-2xl font-bold hover:opacity-90 transition-all flex items-center gap-2 shadow-xl shadow-pink-500/20 mx-auto md:mx-0"
+                  >
+                    Seguir Agora <Instagram size={20} />
+                  </button>
+                </div>
+                <div className="flex-1 flex justify-center items-center">
+                  <motion.div
+                    initial={{ y: 50, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.2, duration: 0.5 }}
+                    className="relative cursor-pointer group/insta"
+                    onClick={() => window.open('https://www.instagram.com/easytechstorers', '_blank')}
+                  >
+                    {/* Smartphone Frame */}
+                    <div className="relative w-[260px] h-[520px] bg-zinc-800 rounded-[3rem] border-[8px] border-zinc-700 shadow-2xl overflow-hidden">
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-zinc-700 rounded-b-2xl z-20"></div>
+                      <img 
+                        src={slides[currentIndex].data.image} 
+                        alt="Instagram Preview" 
+                        className="w-full h-full object-cover group-hover/insta:scale-105 transition-transform duration-700"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/insta/400/800';
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-black/20 group-hover/insta:bg-transparent transition-colors"></div>
+                    </div>
+                    {/* Decorative glow */}
+                    <div className="absolute inset-0 bg-pink-500/10 blur-[100px] -z-10 rounded-full"></div>
+                  </motion.div>
+                </div>
+              </>
+            )}
           </motion.div>
         </AnimatePresence>
 
+        {/* Navigation Arrows */}
+        <button 
+          onClick={prevSlide}
+          className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/20 backdrop-blur border border-white/5 flex items-center justify-center text-white/50 hover:text-white hover:bg-black/40 transition-all z-30 opacity-0 group-hover:opacity-100"
+        >
+          <ChevronLeft size={24} />
+        </button>
+        <button 
+          onClick={nextSlide}
+          className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/20 backdrop-blur border border-white/5 flex items-center justify-center text-white/50 hover:text-white hover:bg-black/40 transition-all z-30 opacity-0 group-hover:opacity-100"
+        >
+          <ChevronRight size={24} />
+        </button>
+
         {/* Navigation Dots */}
         <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-3 z-20">
-          {featuredProducts.map((_, idx) => (
+          {slides.map((_, idx) => (
             <button
               key={idx}
               onClick={() => setCurrentIndex(idx)}
@@ -462,7 +664,7 @@ const ProductCard = ({ product, onClick }: { product: Product; onClick: () => vo
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100"
           referrerPolicy="no-referrer"
         />
-        <div className="absolute top-4 right-4 bg-vibrant-green/10 backdrop-blur border border-vibrant-green/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-vibrant-green">
+        <div className="absolute top-4 right-4 bg-vibrant-green border border-vibrant-green px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-black shadow-lg shadow-vibrant-green/20">
           {product.category}
         </div>
       </div>
@@ -622,14 +824,18 @@ const ProductModal = ({ product, onClose }: { product: Product; onClose: () => v
 export default function App() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState<string>('Todos');
+  const [activeCategory, setActiveCategory] = useState<string>('Home');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const categories = ['Todos', 'iPhone', 'iPad', 'MacBook', 'Xiaomi', 'Consoles'];
+  const categories = ['Home', 'iPhone', 'iPad', 'MacBook', 'Xiaomi', 'Consoles'];
 
   const filteredProducts = useMemo(() => {
     return PRODUCTS.filter(p => {
-      const matchesSearch = p.model.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = activeCategory === 'Todos' || p.category === activeCategory;
+      const searchLower = searchQuery.toLowerCase();
+      const matchesSearch = p.model.toLowerCase().includes(searchLower) || 
+                           p.description.toLowerCase().includes(searchLower) ||
+                           p.category.toLowerCase().includes(searchLower);
+      const matchesCategory = activeCategory === 'Home' || p.category === activeCategory;
       return matchesSearch && matchesCategory;
     });
   }, [searchQuery, activeCategory]);
@@ -638,17 +844,36 @@ export default function App() {
     <div className="min-h-screen pb-20 bg-zinc-950">
       {/* Header */}
       <header className="sticky top-0 z-40 glass">
-        <div className="max-w-7xl mx-auto px-6 h-20 md:h-[95px] flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-6 h-20 md:h-[95px] flex items-center justify-between gap-4">
+          <div className="flex items-center gap-8">
             <img 
               src="/logos/Logo.png" 
               alt="Easy Tech" 
-              className="h-14 md:h-[85px] w-auto object-contain brightness-110 contrast-110" 
+              className="h-14 md:h-[85px] w-auto object-contain brightness-110 contrast-110 cursor-pointer" 
               referrerPolicy="no-referrer"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             />
+            
+            {/* Desktop Category Menu */}
+            <nav className="hidden lg:flex items-center gap-6">
+              {categories.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => {
+                    setActiveCategory(cat);
+                    document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className={`text-[10px] font-bold uppercase tracking-[0.2em] transition-all hover:text-vibrant-green ${
+                    activeCategory === cat ? 'text-vibrant-green' : 'text-zinc-500'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </nav>
           </div>
           
-          <div className="hidden md:flex items-center bg-zinc-900 border border-zinc-800 px-4 py-2 rounded-full w-96">
+          <div className="hidden md:flex items-center bg-zinc-900 border border-zinc-800 px-4 py-2 rounded-full flex-1 max-w-md">
             <Search size={18} className="text-zinc-500 mr-2" />
             <input 
               type="text" 
@@ -659,10 +884,99 @@ export default function App() {
             />
           </div>
 
-          <div className="flex items-center gap-4">
-            {/* Shopping bag removed as it is not an e-commerce yet */}
+          <div className="flex items-center gap-2 md:gap-4">
+            <button 
+              onClick={() => window.open('https://www.instagram.com/easytechstorers', '_blank')}
+              className="p-2.5 text-zinc-400 hover:text-pink-500 transition-all bg-zinc-900/50 border border-zinc-800 rounded-xl"
+              title="Instagram"
+            >
+              <Instagram size={20} />
+            </button>
+            <button 
+              onClick={() => window.open('https://wa.me/5554991370566', '_blank')}
+              className="p-2.5 text-zinc-400 hover:text-vibrant-green transition-all bg-zinc-900/50 border border-zinc-800 rounded-xl"
+              title="WhatsApp"
+            >
+              <MessageCircle size={20} />
+            </button>
+            
+            {/* Mobile Menu Toggle */}
+            <button 
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="md:hidden p-2.5 text-zinc-400 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:text-vibrant-green transition-colors"
+            >
+              <Menu size={20} />
+            </button>
           </div>
         </div>
+
+        {/* Mobile Menu Drawer */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <>
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+              />
+              <motion.div 
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                className="fixed top-0 right-0 bottom-0 w-80 bg-zinc-950/80 backdrop-blur-xl border-l border-zinc-800 z-50 p-8 flex flex-col"
+              >
+                <div className="flex items-center justify-between mb-12">
+                  <span className="text-xs font-bold uppercase tracking-widest text-zinc-500">Menu</span>
+                  <button 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-white"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <nav className="flex flex-col gap-6">
+                  {categories.map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => {
+                        setActiveCategory(cat);
+                        setIsMobileMenuOpen(false);
+                        document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className={`text-2xl font-bold tracking-tight text-left transition-all ${
+                        activeCategory === cat ? 'text-vibrant-green' : 'text-zinc-400 hover:text-zinc-100'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </nav>
+
+                <div className="mt-auto pt-12 border-t border-zinc-900">
+                  <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-6">Redes Sociais</p>
+                  <div className="flex gap-4">
+                    <button 
+                      onClick={() => window.open('https://www.instagram.com/easytechstorers', '_blank')}
+                      className="flex-1 bg-zinc-900 border border-zinc-800 p-4 rounded-2xl flex items-center justify-center text-zinc-400 hover:text-pink-500 transition-all"
+                    >
+                      <Instagram size={24} />
+                    </button>
+                    <button 
+                      onClick={() => window.open('https://wa.me/5554991370566', '_blank')}
+                      className="flex-1 bg-zinc-900 border border-zinc-800 p-4 rounded-2xl flex items-center justify-center text-zinc-400 hover:text-vibrant-green transition-all"
+                    >
+                      <MessageCircle size={24} />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </header>
 
       <main className="max-w-7xl mx-auto px-6 pt-12">
