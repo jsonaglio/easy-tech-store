@@ -44,7 +44,7 @@ const PRODUCTS: Product[] = [
     id: '1',
     model: 'iPhone 17',
     description: 'O futuro da tecnologia móvel com o chip A19 Bionic.',
-    basePrice: 5299,
+    basePrice: 6299.90,
     image: '/Iphone 17/iPhone17-Preto.webp',
     colors: ['Lavanda', 'Sálvia', 'Azul-névoa', 'Branco', 'Preto'],
     colorImages: {
@@ -56,7 +56,7 @@ const PRODUCTS: Product[] = [
     },
     storage: ['256 GB', '512 GB'],
     storagePrices: {
-      '256 GB': 5299,
+      '256 GB': 6299.90,
       '512 GB': 7599
     },
     category: 'iPhone',
