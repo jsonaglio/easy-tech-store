@@ -106,7 +106,7 @@ const PRODUCTS: Product[] = [
     id: '10',
     model: 'PlayStation 5',
     description: 'Experiência de jogo imersiva com SSD ultra-rápido.',
-    basePrice: 3399.90,
+    basePrice: 3599.90,
     image: '/Playstation 5/PS5-digital.jpg',
     colors: ['Branco'],
     colorImages: {
