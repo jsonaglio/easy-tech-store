@@ -353,8 +353,8 @@ const PRODUCTS: Product[] = [
     },
     storage: ['256GB/8GB de Ram', '512GB/12Gb de Ram'],
     storagePrices: {
-      '256GB/8GB de Ram': 2099.90,
-      '512GB/12Gb de Ram': 2399.90
+      '256GB/8GB de Ram': 2399.90,
+      '512GB/12Gb de Ram': 2699.90
     },
     category: 'Xiaomi',
     note: 'Valores para condição de pagamento à vista. Consulte nossa disponibilidade de cores e opções de parcelamento com nossos consultores pelo botão do WhatsApp.'
