@@ -343,7 +343,7 @@ const PRODUCTS: Product[] = [
     id: '15',
     model: 'Poco X7 Pro',
     description: 'O topo de linha da linha Poco com performance extrema.',
-    basePrice: 2099.90,
+    basePrice: 2399.90,
     image: '/Poco X7 Pro/PocoX7Pro-Preto.jpg',
     colors: ['Preto', 'Amarelo', 'Verde'],
     colorImages: {
