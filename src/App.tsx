@@ -29,8 +29,8 @@ import autoTable from "jspdf-autotable";
 import { GoogleGenAI } from "@google/genai";
 import { cn } from "./lib/utils";
 
-const LOGO_URL = "/Logo.png"; // Local logo in public folder
-const LOGO2_URL = "/Logo 2.png"; // New horizontal logo
+const LOGO_URL = "/logos/logos/Logo.png"; // Local logo in public folder
+const LOGO2_URL = "/logos/Logo.png"; // New horizontal logo
 const BG_URL = "https://ais-pre-uwhwyivzex77gwonguyml2-121108784645.us-west1.run.app/attachment/67035677-494b-4860-9195-2633005a7674"; // Matrix Rain
 
 const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
