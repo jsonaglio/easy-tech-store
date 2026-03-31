@@ -1,909 +1,1109 @@
-import React, { useState, useEffect } from "react";
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
-  Plus, 
-  Trash2, 
-  Download, 
-  Monitor, 
   Smartphone, 
-  Laptop, 
-  Gamepad2, 
-  MoreHorizontal,
+  Search, 
+  ChevronRight, 
+  ChevronLeft,
+  Check, 
+  X, 
+  MessageCircle,
+  Instagram,
+  Filter,
+  ArrowRight,
+  Laptop,
+  Tablet,
   Cpu,
-  HardDrive,
-  CircuitBoard,
-  Zap,
-  Box,
-  CreditCard,
-  Calendar,
-  User,
-  Phone,
-  FileText,
-  CheckCircle2,
-  Copy,
-  Share2
-} from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
-import { format, addDays } from "date-fns";
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
-import { GoogleGenAI } from "@google/genai";
-import { cn } from "./lib/utils";
+  Menu
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
-const LOGO_URL = "/logos/logos/Logo.png"; // Local logo in public folder
-const LOGO2_URL = "/logos/Logo.png"; // New horizontal logo
-const BG_URL = "https://ais-pre-uwhwyivzex77gwonguyml2-121108784645.us-west1.run.app/attachment/67035677-494b-4860-9195-2633005a7674"; // Matrix Rain
+// --- Types ---
+interface Product {
+  id: string;
+  model: string;
+  description: string;
+  basePrice: number;
+  image: string;
+  colors: string[];
+  colorImages?: Record<string, string>;
+  storage: string[];
+  storageImages?: Record<string, string>;
+  storagePrices?: Record<string, number>;
+  category: 'iPhone' | 'iPad' | 'MacBook' | 'Xiaomi' | 'Consoles';
+  note?: string;
+}
 
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
-import { Category, QuoteData, PCComponents } from "./types";
-
-const CATEGORIES: { id: Category; label: string; icon: any }[] = [
-  { id: "PC", label: "Computador / PC", icon: Monitor },
-  { id: "Notebook", label: "Notebook", icon: Laptop },
-  { id: "Smartphone", label: "Celular / Smartphone", icon: Smartphone },
-  { id: "Console", label: "Console / Games", icon: Gamepad2 },
-  { id: "Outros", label: "Outros", icon: MoreHorizontal },
+// --- Mock Data ---
+const PRODUCTS: Product[] = [
+  {
+    id: '1',
+    model: 'iPhone 17',
+    description: 'O futuro da tecnologia móvel com o chip A19 Bionic.',
+    basePrice: 6299.90,
+    image: '/Iphone 17/iPhone17-Preto.webp',
+    colors: ['Lavanda', 'Sálvia', 'Azul-névoa', 'Branco', 'Preto'],
+    colorImages: {
+      'Lavanda': '/Iphone 17/iPhone17-Lavanda.webp',
+      'Sálvia': '/Iphone 17/iPhone17-Sálvia.webp',
+      'Azul-névoa': '/Iphone 17/iPhone17-Azul_nevoa.webp',
+      'Branco': '/Iphone 17/iPhone17-Branco.webp',
+      'Preto': '/Iphone 17/iPhone17-Preto.webp'
+    },
+    storage: ['256 GB', '512 GB'],
+    storagePrices: {
+      '256 GB': 6299.90,
+      '512 GB': 7599
+    },
+    category: 'iPhone',
+    note: 'Valores para condição de pagamento à vista. Consulte nossa disponibilidade de cores e opções de parcelamento com nossos consultores pelo botão do WhatsApp.'
+  },
+  {
+    id: '22',
+    model: 'iPhone 17 Pro',
+    description: 'O ápice da performance com o chip A19 Pro e sistema de câmera tripla.',
+    basePrice: 8399.90,
+    image: '/17PM/17PM-silver.jpg',
+    colors: ['Silver', 'Orange', 'Deep Blue'],
+    colorImages: {
+      'Silver': '/17PM/17PM-silver.jpg',
+      'Orange': '/17PM/17PM-Laranja.jpg',
+      'Deep Blue': '/17PM/i17PM - Deep Blue.jpg'
+    },
+    storage: ['256 GB', '512 GB'],
+    storagePrices: {
+      '256 GB': 8399.90,
+      '512 GB': 9699.90
+    },
+    category: 'iPhone',
+    note: 'Valores para condição de pagamento à vista. Consulte nossa disponibilidade de cores e opções de parcelamento com nossos consultores pelo botão do WhatsApp.'
+  },
+  {
+    id: '23',
+    model: 'iPhone 17 Pro Max',
+    description: 'A maior tela e a melhor bateria da linha iPhone 17.',
+    basePrice: 9499.90,
+    image: '/17PM/17PM-silver.jpg',
+    colors: ['Silver', 'Orange', 'Deep Blue'],
+    colorImages: {
+      'Silver': '/17PM/17PM-silver.jpg',
+      'Orange': '/17PM/17PM-Laranja.jpg',
+      'Deep Blue': '/17PM/i17PM - Deep Blue.jpg'
+    },
+    storage: ['256 GB', '512 GB'],
+    storagePrices: {
+      '256 GB': 9499.90,
+      '512 GB': 10999.90
+    },
+    category: 'iPhone',
+    note: 'Valores para condição de pagamento à vista. Consulte nossa disponibilidade de cores e opções de parcelamento com nossos consultores pelo botão do WhatsApp.'
+  },
+  {
+    id: '10',
+    model: 'PlayStation 5',
+    description: 'Experiência de jogo imersiva com SSD ultra-rápido.',
+    basePrice: 3599.90,
+    image: '/Playstation 5/PS5-digital.jpg',
+    colors: ['Branco'],
+    colorImages: {
+      'Branco': '/Playstation 5/PS5-digital.jpg'
+    },
+    storage: ['Slim Digital', 'Mídia Física', 'Pro'],
+    storageImages: {
+      'Slim Digital': '/Playstation 5/PS5-digital.jpg',
+      'Mídia Física': '/Playstation 5/Ps5-MidiaFisica.jpg',
+      'Pro': '/Playstation 5/PS5-Pro.jpg'
+    },
+    storagePrices: {
+      'Slim Digital': 3599.90,
+      'Mídia Física': 3929.90,
+      'Pro': 5659.90
+    },
+    category: 'Consoles',
+    note: 'Valores para condição de pagamento à vista. Consulte nossa disponibilidade de cores e opções de parcelamento com nossos consultores pelo botão do WhatsApp.'
+  },
+  {
+    id: '2',
+    model: 'iPhone 16',
+    description: 'Performance excepcional e controle de câmera avançado.',
+    basePrice: 4999.90,
+    image: '/iphone16/iphone16-Preto.webp',
+    colors: ['Ultramarino', 'Verde-acinzentado', 'Rosa', 'Branco', 'Preto'],
+    colorImages: {
+      'Ultramarino': '/iphone16/iphone16-ultramarine.webp',
+      'Verde-acinzentado': '/iphone16/iphone16-verde_acinzentado.webp',
+      'Rosa': '/iphone16/iphone16-Rosa.webp',
+      'Branco': '/iphone16/iphone16-branco.webp',
+      'Preto': '/iphone16/iphone16-Preto.webp'
+    },
+    storage: ['128 GB', '256 GB'],
+    storagePrices: {
+      '128 GB': 4999.90,
+      '256 GB': 5499.90
+    },
+    category: 'iPhone',
+    note: 'Valores para condição de pagamento à vista. Consulte nossa disponibilidade de cores e opções de parcelamento com nossos consultores pelo botão do WhatsApp.'
+  },
+  {
+    id: '12',
+    model: 'Nintendo Switch OLED',
+    description: 'Cores vibrantes e contraste nítido em qualquer lugar.',
+    basePrice: 2979.90,
+    image: '/Nintendo switch Oled/Nintendo Switch Oled-Branco.avif',
+    colors: ['Branco', 'Neon'],
+    colorImages: {
+      'Branco': '/Nintendo switch Oled/Nintendo Switch Oled-Branco.avif',
+      'Neon': '/Nintendo switch Oled/Nintendo Switch Oled-Neon.avif'
+    },
+    storage: ['64 GB'],
+    category: 'Consoles',
+    note: 'Valores para condição de pagamento à vista. Consulte nossa disponibilidade de cores e opções de parcelamento com nossos consultores pelo botão do WhatsApp.'
+  },
+  {
+    id: '18',
+    model: 'Nintendo Switch',
+    description: 'A versatilidade do console híbrido da Nintendo.',
+    basePrice: 2129.90,
+    image: '/Nintendo switch/Nintendo Switch-Neon.avif',
+    colors: ['Neon'],
+    colorImages: {
+      'Neon': '/Nintendo switch/Nintendo Switch-Neon.avif'
+    },
+    storage: ['32 GB'],
+    category: 'Consoles',
+    note: 'Valores para condição de pagamento à vista. Consulte nossa disponibilidade de cores e opções de parcelamento com nossos consultores pelo botão do WhatsApp.'
+  },
+  {
+    id: '19',
+    model: 'Nintendo Switch 2',
+    description: 'A próxima geração de diversão da Nintendo.',
+    basePrice: 4329.90,
+    image: '/Nintendo Switch 2/Nintendo Switch 2.avif',
+    colors: ['Preto'],
+    colorImages: {
+      'Preto': '/Nintendo Switch 2/Nintendo Switch 2.avif'
+    },
+    storage: ['128 GB'],
+    category: 'Consoles',
+    note: 'Valores para condição de pagamento à vista. Consulte nossa disponibilidade de cores e opções de parcelamento com nossos consultores pelo botão do WhatsApp.'
+  },
+  {
+    id: '20',
+    model: 'Xbox Series S',
+    description: 'Performance de nova geração no menor console Xbox de todos os tempos.',
+    basePrice: 3099.90,
+    image: '/Xbox Series S/XboxSeriesS.jpg',
+    colors: ['Branco'],
+    colorImages: {
+      'Branco': '/Xbox Series S/XboxSeriesS.jpg'
+    },
+    storage: ['512 GB', '1 TB'],
+    storagePrices: {
+      '512 GB': 3099.90,
+      '1 TB': 3529.90
+    },
+    category: 'Consoles',
+    note: 'Valores para condição de pagamento à vista. Consulte nossa disponibilidade de cores e opções de parcelamento com nossos consultores pelo botão do WhatsApp.'
+  },
+  {
+    id: '21',
+    model: 'Xbox Series X',
+    description: 'O Xbox mais rápido e potente de todos os tempos.',
+    basePrice: 4799.90,
+    image: '/Xbox Series X/SeriesX- Fisico.jpg',
+    colors: ['Preto'],
+    colorImages: {
+      'Preto': '/Xbox Series X/SeriesX- Fisico.jpg'
+    },
+    storage: ['Digital 1 TB', 'Mídia Física'],
+    storageImages: {
+      'Digital 1 TB': '/Xbox Series X/SeriesX-Digital.jpg',
+      'Mídia Física': '/Xbox Series X/SeriesX- Fisico.jpg'
+    },
+    storagePrices: {
+      'Digital 1 TB': 4799.90,
+      'Mídia Física': 4999.90
+    },
+    category: 'Consoles',
+    note: 'Valores para condição de pagamento à vista. Consulte nossa disponibilidade de cores e opções de parcelamento com nossos consultores pelo botão do WhatsApp.'
+  },
+  {
+    id: '3',
+    model: 'Apple iPhone 15',
+    description: 'Design elegante com Dynamic Island e USB-C.',
+    basePrice: 4299.90,
+    image: '/iPhone 15/iPhone15-Preto.webp',
+    colors: ['Preto', 'Azul', 'Verde', 'Rosa'],
+    colorImages: {
+      'Preto': '/iPhone 15/iPhone15-Preto.webp',
+      'Azul': '/iPhone 15/iPhone15-azul.jpg',
+      'Verde': '/iPhone 15/iPhone15-Verde.webp',
+      'Rosa': '/iPhone 15/iPhone15-Pink.jpg'
+    },
+    storage: ['128GB', '256GB'],
+    storagePrices: {
+      '128GB': 4299.90,
+      '256GB': 4999.90
+    },
+    category: 'iPhone',
+    note: 'Valores para condição de pagamento à vista. Consulte nossa disponibilidade de cores e opções de parcelamento com nossos consultores pelo botão do WhatsApp.'
+  },
+  {
+    id: '6',
+    model: 'Apple iPad 11 A16',
+    description: 'Potência e versatilidade com o chip A16 Bionic para todas as suas tarefas.',
+    basePrice: 3179.90,
+    image: '/Ipad 11/iPad11-Silver.jpg',
+    colors: ['Silver', 'Pink', 'Azul', 'Amarelo'],
+    colorImages: {
+      'Silver': '/Ipad 11/iPad11-Silver.jpg',
+      'Pink': '/Ipad 11/iPad11-Pink.jpg',
+      'Azul': '/Ipad 11/iPad11-Azul.jpg',
+      'Amarelo': '/Ipad 11/iPad11-Amarelo.jpg'
+    },
+    storage: ['128GB', '256GB'],
+    storagePrices: {
+      '128GB': 3179.90,
+      '256GB': 3899.90
+    },
+    category: 'iPad',
+    note: 'Valores para condição de pagamento à vista. Consulte nossa disponibilidade de cores e opções de parcelamento com nossos consultores pelo botão do WhatsApp.'
+  },
+  {
+    id: '9',
+    model: 'Redmi 15C',
+    description: 'Bateria de longa duração e design moderno.',
+    basePrice: 1199.90,
+    image: '/Redmi 15C/Redmi15C-Preto.jpg',
+    colors: ['Laranja', 'Moonlight Blue', 'Verde', 'Preto'],
+    colorImages: {
+      'Laranja': '/Redmi 15C/Redmi15C-laranja.jpg',
+      'Moonlight Blue': '/Redmi 15C/Redmi15C-MoonlightBlue.jpg',
+      'Verde': '/Redmi 15C/Redmi15C-Verde.jpg',
+      'Preto': '/Redmi 15C/Redmi15C-Preto.jpg'
+    },
+    storage: ['256GB/8GB Ram'],
+    category: 'Xiaomi',
+    note: 'Valores para condição de pagamento à vista. Consulte nossa disponibilidade de cores e opções de parcelamento com nossos consultores pelo botão do WhatsApp.'
+  },
+  {
+    id: '13',
+    model: 'Redmi Note 15',
+    description: 'Equilíbrio perfeito entre performance e preço.',
+    basePrice: 1799.90,
+    image: '/Redmi note 15/Note15-preto.webp',
+    colors: ['Azul', 'Roxo', 'Verde', 'Preto'],
+    colorImages: {
+      'Azul': '/Redmi note 15/Note15-Azul.jpg',
+      'Roxo': '/Redmi note 15/Note15-Roxo.jpg',
+      'Verde': '/Redmi note 15/Note15-verde.jpg',
+      'Preto': '/Redmi note 15/Note15-preto.webp'
+    },
+    storage: ['256GB/8GB Ram'],
+    category: 'Xiaomi',
+    note: 'Valores para condição de pagamento à vista. Consulte nossa disponibilidade de cores e opções de parcelamento com nossos consultores pelo botão do WhatsApp.'
+  },
+  {
+    id: '7',
+    model: 'Redmi Note 15 Pro',
+    description: 'Câmera de alta resolução e tela AMOLED fluida.',
+    basePrice: 2399.90,
+    image: '/Redmi note 15 pro/Note15Pro-Preto.jpg',
+    colors: ['Azul', 'Preto', 'Titanium'],
+    colorImages: {
+      'Azul': '/Redmi note 15 pro/Note15Pro-Azul.jpg',
+      'Preto': '/Redmi note 15 pro/Note15Pro-Preto.jpg',
+      'Titanium': '/Redmi note 15 pro/Note15Pro-Titanium.jpg'
+    },
+    storage: ['256GB/8GB de Ram'],
+    category: 'Xiaomi',
+    note: 'Valores para condição de pagamento à vista. Consulte nossa disponibilidade de cores e opções de parcelamento com nossos consultores pelo botão do WhatsApp.'
+  },
+  {
+    id: '14',
+    model: 'Poco X7',
+    description: 'Potência gamer com excelente custo-benefício.',
+    basePrice: 1899.90,
+    image: '/Poco X7/PocoX7-Preto:Amarelo.jpg',
+    colors: ['Preto/Amarelo', 'Verde', 'Prata'],
+    colorImages: {
+      'Preto/Amarelo': '/Poco X7/PocoX7-Preto:Amarelo.jpg',
+      'Verde': '/Poco X7/PocoX7-Verde.jpg',
+      'Prata': '/Poco X7/PocoX7-Prata.jpg'
+    },
+    storage: ['256GB/8GB de Ram'],
+    category: 'Xiaomi',
+    note: 'Valores para condição de pagamento à vista. Consulte nossa disponibilidade de cores e opções de parcelamento com nossos consultores pelo botão do WhatsApp.'
+  },
+  {
+    id: '15',
+    model: 'Poco X7 Pro',
+    description: 'O topo de linha da linha Poco com performance extrema.',
+    basePrice: 2099.90,
+    image: '/Poco X7 Pro/PocoX7Pro-Preto.jpg',
+    colors: ['Preto', 'Amarelo', 'Verde'],
+    colorImages: {
+      'Preto': '/Poco X7 Pro/PocoX7Pro-Preto.jpg',
+      'Amarelo': '/Poco X7 Pro/PocoX7Pro-Amarelo.jpg',
+      'Verde': '/Poco X7 Pro/PocoX7Pro-Verde.jpg'
+    },
+    storage: ['256GB/8GB de Ram', '512GB/12Gb de Ram'],
+    storagePrices: {
+      '256GB/8GB de Ram': 2399.90,
+      '512GB/12Gb de Ram': 2699.90
+    },
+    category: 'Xiaomi',
+    note: 'Valores para condição de pagamento à vista. Consulte nossa disponibilidade de cores e opções de parcelamento com nossos consultores pelo botão do WhatsApp.'
+  },
+  {
+    id: '16',
+    model: 'MacBook Air M1 (2020) 13,1"',
+    description: 'O chip M1 redefine o notebook mais fino e leve da Apple.',
+    basePrice: 4899.90,
+    image: '/Macbook Air M1/MacbookAirm1-SpaceGray.webp',
+    colors: ['Space Gray'],
+    colorImages: {
+      'Space Gray': '/Macbook Air M1/MacbookAirm1-SpaceGray.webp'
+    },
+    storage: ['256GB/8GB'],
+    category: 'MacBook',
+    note: 'Valores para condição de pagamento à vista. Consulte nossa disponibilidade de cores e opções de parcelamento com nossos consultores pelo botão do WhatsApp.'
+  },
+  {
+    id: '17',
+    model: 'MacBook Air M4 (2025) 13,6"',
+    description: 'Performance de última geração com o novo chip M4.',
+    basePrice: 7759.90,
+    image: '/Macbook Air M4/MacbookAirM4-Midnight.jpg',
+    colors: ['SkyBlue', 'Silver', 'Starlight', 'Midnight'],
+    colorImages: {
+      'SkyBlue': '/Macbook Air M4/MacbookAirM4-SkyBlue.jpg',
+      'Silver': '/Macbook Air M4/MacbookAirM4-Silver.jpg',
+      'Starlight': '/Macbook Air M4/MacbookAirM4-Starlight.jpg',
+      'Midnight': '/Macbook Air M4/MacbookAirM4-Midnight.jpg'
+    },
+    storage: ['256GB/16GB', '512GB/16GB'],
+    storagePrices: {
+      '256GB/16GB': 7759.90,
+      '512GB/16GB': 8899.90
+    },
+    category: 'MacBook',
+    note: 'Valores para condição de pagamento à vista. Consulte nossa disponibilidade de cores e opções de parcelamento com nossos consultores pelo botão do WhatsApp.'
+  }
 ];
 
-const INITIAL_PC_COMPONENTS: PCComponents = {
-  processor: "",
-  memory: "",
-  motherboard: "",
-  powerSupply: "",
-  storage: "",
-  case: "",
-  gpu: "",
-  cooling: "",
-};
+// --- Components ---
 
-const INITIAL_QUOTE: QuoteData = {
-  date: format(new Date(), "yyyy-MM-dd"),
-  clientName: "",
-  clientPhone: "",
-  category: "PC",
-  description: "",
-  pcComponents: INITIAL_PC_COMPONENTS,
-  price: 0,
-  interestRate: 0,
-  installments: 1,
-  paymentTerms: "À vista via PIX ou Cartão de Crédito",
-  validityDays: 7,
-  notes: "",
-};
+const DynamicBanner = ({ products, onSelect }: { products: Product[], onSelect: (p: Product) => void }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const featuredProducts = products.slice(0, 4); // Show first 4 products as featured
+  
+  // Add Instagram and Services as special slides
+  const slides = [
+    ...featuredProducts.map(p => ({ type: 'product' as const, data: p })),
+    { 
+      type: 'services' as const,
+      data: {
+        title: 'Assistência & Montagem',
+        subtitle: 'Serviços Premium',
+        description: 'Assistência técnica especializada para Smartphones, PCs e Consoles. Montagem de PCs Gamer e venda de periféricos.',
+        items: [
+          'Assistência Técnica Premium',
+          'Periféricos & Acessórios',
+          'Montagem de PCs Especializada'
+        ]
+      }
+    },
+    { 
+      type: 'instagram' as const, 
+      data: {
+        title: 'Siga-nos no Instagram',
+        handle: '@easytechstorers',
+        description: 'Fique por dentro de todas as novidades, unboxings e ofertas exclusivas em tempo real.',
+        image: '/logos/Instagram.PNG'
+      }
+    }
+  ];
 
-export default function App() {
-  const [quote, setQuote] = useState<QuoteData>(INITIAL_QUOTE);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [isTranscribing, setIsTranscribing] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
+  const nextSlide = () => {
+    setCurrentIndex((prev) => (prev + 1) % slides.length);
+  };
 
-  const totalPrice = quote.price * (1 + quote.interestRate / 100);
-  const installmentValue = totalPrice / quote.installments;
+  const prevSlide = () => {
+    setCurrentIndex((prev) => (prev - 1 + slides.length) % slides.length);
+  };
 
   useEffect(() => {
-    const handlePaste = (e: ClipboardEvent) => {
-      const items = e.clipboardData?.items;
-      if (items) {
-        for (let i = 0; i < items.length; i++) {
-          if (items[i].type.indexOf("image") !== -1) {
-            const blob = items[i].getAsFile();
-            if (blob) {
-              const file = new File([blob], "pasted-image.png", { type: blob.type });
-              processImage(file);
-            }
-          }
-        }
-      }
-    };
-    window.addEventListener("paste", handlePaste);
-    return () => window.removeEventListener("paste", handlePaste);
-  }, []);
-
-  const processImage = async (file: File) => {
-    setIsTranscribing(true);
-    try {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = async () => {
-        const base64Data = (reader.result as string).split(",")[1];
-        
-        const prompt = `Extract product details from this image of a quote or product list. 
-        Return ONLY a JSON object with this structure:
-        {
-          "clientName": "string",
-          "category": "PC" | "Notebook" | "Smartphone" | "Console" | "Outros",
-          "description": "string",
-          "pcComponents": {
-            "processor": "string",
-            "memory": "string",
-            "motherboard": "string",
-            "powerSupply": "string",
-            "storage": "string",
-            "case": "string",
-            "gpu": "string",
-            "cooling": "string"
-          },
-          "price": number
-        }
-        If a field is not found, use empty string or 0 for price. 
-        If it's a PC, fill pcComponents. Otherwise, fill description.`;
-
-        const result = await genAI.models.generateContent({
-          model: "gemini-3-flash-preview",
-          contents: [{
-            parts: [
-              { text: prompt },
-              { inlineData: { data: base64Data, mimeType: file.type } }
-            ]
-          }]
-        });
-
-        const responseText = result.text;
-        const jsonMatch = responseText?.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const data = JSON.parse(jsonMatch[0]);
-          setQuote(prev => ({
-            ...prev,
-            ...data,
-            id: prev.id, 
-            date: prev.date,
-            pcComponents: data.pcComponents || prev.pcComponents
-          }));
-          setToastMessage("Dados extraídos com sucesso!");
-          setShowSuccess(true);
-          setTimeout(() => setShowSuccess(false), 3000);
-        }
-      };
-    } catch (error) {
-      console.error("Transcription error:", error);
-      alert("Erro ao transcrever imagem. Tente novamente.");
-    } finally {
-      setIsTranscribing(false);
-    }
-  };
-
-  const handleImageTranscription = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) processImage(file);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file && file.type.startsWith("image/")) {
-      processImage(file);
-    }
-  };
-
-  const handleInputChange = (field: keyof QuoteData, value: any) => {
-    setQuote((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handlePCComponentChange = (field: keyof PCComponents, value: string) => {
-    setQuote((prev) => ({
-      ...prev,
-      pcComponents: {
-        ...prev.pcComponents!,
-        [field]: value,
-      },
-    }));
-  };
-
-  const copyToClipboard = () => {
-    let text = `*ORÇAMENTO EASYTECH STORE*\n\n`;
-    text += `*Cliente:* ${quote.clientName || "Não informado"}\n`;
-    text += `*Categoria:* ${CATEGORIES.find(c => c.id === quote.category)?.label}\n\n`;
-    
-    if (quote.category === "PC" && quote.pcComponents) {
-      text += `*Configuração:*\n`;
-      if (quote.pcComponents.processor) text += `- Processador: ${quote.pcComponents.processor}\n`;
-      if (quote.pcComponents.motherboard) text += `- Placa Mãe: ${quote.pcComponents.motherboard}\n`;
-      if (quote.pcComponents.memory) text += `- Memória: ${quote.pcComponents.memory}\n`;
-      if (quote.pcComponents.storage) text += `- Armazenamento: ${quote.pcComponents.storage}\n`;
-      if (quote.pcComponents.gpu) text += `- Placa de Vídeo: ${quote.pcComponents.gpu}\n`;
-      if (quote.pcComponents.powerSupply) text += `- Fonte: ${quote.pcComponents.powerSupply}\n`;
-    } else {
-      text += `*Descrição:* ${quote.description || "N/A"}\n`;
-    }
-    
-    text += `\n*Valor à Vista:* R$ ${quote.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}\n`;
-    if (quote.interestRate > 0) {
-      text += `*Taxa de Juros:* ${quote.interestRate}%\n`;
-    }
-    text += `*Valor Total:* R$ ${totalPrice.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}\n`;
-    if (quote.installments > 1) {
-      text += `*Parcelamento:* ${quote.installments}x de R$ ${installmentValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}\n`;
-    }
-    text += `*Pagamento:* ${quote.paymentTerms}\n`;
-    text += `*Validade:* ${quote.validityDays} dias\n\n`;
-    text += `_Gerado via EasyTech Quote App_`;
-
-    navigator.clipboard.writeText(text);
-    setToastMessage("Resumo copiado para o WhatsApp!");
-    setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 3000);
-  };
-
-  const generatePDF = async () => {
-    setIsGenerating(true);
-    try {
-      const doc = new jsPDF();
-      const primaryColor = [10, 10, 10]; // Near Black
-      const accentColor = [34, 197, 94]; // EasyTech Green
-      const darkGray = [20, 20, 20];
-      const lightGray = [40, 40, 40];
-
-      // Full Page Background
-      doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-      doc.rect(0, 0, 210, 297, "F");
-
-      // Matrix Background Pattern (Subtle)
-      try {
-        doc.setGState(new (doc as any).GState({ opacity: 0.1 }));
-        doc.addImage(BG_URL, "JPEG", 0, 0, 210, 297, undefined, "FAST");
-        doc.setGState(new (doc as any).GState({ opacity: 1.0 }));
-      } catch (e) {
-        console.warn("Could not add background pattern", e);
-      }
-
-      // Header Gradient/Bar
-      doc.setFillColor(15, 15, 15);
-      doc.rect(0, 0, 210, 50, "F");
-      doc.setDrawColor(accentColor[0], accentColor[1], accentColor[2]);
-      doc.setLineWidth(0.5);
-      doc.line(0, 50, 210, 50);
-      
-      // Logo
-      try {
-        doc.addImage(LOGO_URL, "PNG", 15, 5, 45, 45);
-      } catch (e) {
-        console.warn("Could not add logo", e);
-      }
-      
-      // Logo 2 (Horizontal)
-      try {
-        doc.addImage(LOGO2_URL, "PNG", 65, 12, 110, 30);
-      } catch (e) {
-        console.warn("Could not add logo 2", e);
-      }
-      
-      // Date
-      doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
-      doc.setFontSize(10);
-      doc.text(format(new Date(quote.date), "dd/MM/yyyy"), 195, 26, { align: "right" });
-
-      // Client Info Bar
-      doc.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
-      doc.rect(0, 55, 210, 15, "F");
-      doc.setTextColor(150, 150, 150);
-      doc.setFontSize(7);
-      doc.text("CLIENTE", 15, 61);
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "bold");
-      doc.text(quote.clientName.toUpperCase() || "NÃO INFORMADO", 15, 66);
-      
-      doc.setTextColor(150, 150, 150);
-      doc.setFontSize(7);
-      doc.setFont("helvetica", "normal");
-      doc.text("TELEFONE", 110, 61);
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "bold");
-      doc.text(quote.clientPhone || "NÃO INFORMADO", 110, 66);
-
-      let currentY = 85;
-
-      if (quote.category === "PC" && quote.pcComponents) {
-        const components = [
-          { label: "PROCESSADOR", value: quote.pcComponents.processor },
-          { label: "MEMÓRIA RAM", value: quote.pcComponents.memory },
-          { label: "PLACA MÃE", value: quote.pcComponents.motherboard },
-          { label: "PLACA DE VÍDEO", value: quote.pcComponents.gpu || "INTEGRADA" },
-          { label: "FONTE REAL", value: quote.pcComponents.powerSupply },
-          { label: "GABINETE GAMER", value: quote.pcComponents.case },
-          { label: "ARMAZENAMENTO", value: quote.pcComponents.storage },
-        ].filter(item => item.value);
-
-        components.forEach((comp, idx) => {
-          // Item Box
-          doc.setDrawColor(40, 40, 40);
-          doc.setLineWidth(0.1);
-          doc.line(15, currentY + 12, 195, currentY + 12);
-
-          // Icon Drawing
-          doc.setDrawColor(accentColor[0], accentColor[1], accentColor[2]);
-          doc.setLineWidth(0.2);
-          doc.roundedRect(15, currentY - 5, 12, 12, 2, 2, "D");
-          
-          // Simple Icons based on label
-          const iconX = 15;
-          const iconY = currentY - 5;
-          if (comp.label.includes("PROCESSADOR")) {
-            doc.rect(iconX + 3, iconY + 3, 6, 6);
-            doc.line(iconX + 4, iconY + 2, iconX + 4, iconY + 3);
-            doc.line(iconX + 6, iconY + 2, iconX + 6, iconY + 3);
-            doc.line(iconX + 8, iconY + 2, iconX + 8, iconY + 3);
-            doc.line(iconX + 4, iconY + 9, iconX + 4, iconY + 10);
-            doc.line(iconX + 6, iconY + 9, iconX + 6, iconY + 10);
-            doc.line(iconX + 8, iconY + 9, iconX + 8, iconY + 10);
-          } else if (comp.label.includes("MEMÓRIA")) {
-            doc.rect(iconX + 2, iconY + 4, 8, 4);
-            doc.line(iconX + 3, iconY + 4, iconX + 3, iconY + 8);
-            doc.line(iconX + 5, iconY + 4, iconX + 5, iconY + 8);
-            doc.line(iconX + 7, iconY + 4, iconX + 7, iconY + 8);
-          } else if (comp.label.includes("PLACA MÃE")) {
-            doc.rect(iconX + 3, iconY + 3, 6, 6);
-            doc.circle(iconX + 6, iconY + 6, 1.5);
-          } else if (comp.label.includes("VÍDEO")) {
-            doc.rect(iconX + 2, iconY + 4, 8, 4);
-            doc.circle(iconX + 4, iconY + 6, 1.5);
-            doc.circle(iconX + 8, iconY + 6, 1.5);
-          } else if (comp.label.includes("FONTE")) {
-            doc.rect(iconX + 3, iconY + 3, 6, 6);
-            doc.line(iconX + 4, iconY + 4, iconX + 8, iconY + 8);
-            doc.line(iconX + 8, iconY + 4, iconX + 4, iconY + 8);
-          } else if (comp.label.includes("GABINETE")) {
-            doc.rect(iconX + 4, iconY + 2, 4, 8);
-          } else if (comp.label.includes("ARMAZENAMENTO")) {
-            doc.ellipse(iconX + 6, iconY + 4, 3, 1.5);
-            doc.line(iconX + 3, iconY + 4, iconX + 3, iconY + 8);
-            doc.line(iconX + 9, iconY + 4, iconX + 9, iconY + 8);
-            doc.ellipse(iconX + 6, iconY + 8, 3, 1.5);
-          }
-
-          doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
-          doc.setFontSize(8);
-          doc.setFont("helvetica", "bold");
-          doc.text(comp.label, 32, currentY);
-          
-          doc.setTextColor(255, 255, 255);
-          doc.setFontSize(10);
-          doc.setFont("helvetica", "bold");
-          doc.text(comp.value.toUpperCase(), 32, currentY + 6);
-          
-          currentY += 18;
-          
-          if (currentY > 250) {
-            doc.addPage();
-            doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-            doc.rect(0, 0, 210, 297, "F");
-            currentY = 30;
-          }
-        });
-      } else {
-        doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "bold");
-        doc.text("DESCRIÇÃO DO PRODUTO", 15, currentY);
-        currentY += 8;
-        
-        doc.setFillColor(darkGray[0], darkGray[1], darkGray[2]);
-        const splitDescription = doc.splitTextToSize(quote.description || "Nenhuma descrição fornecida.", 180);
-        doc.roundedRect(15, currentY - 5, 180, (splitDescription.length * 6) + 10, 3, 3, "F");
-        
-        doc.setTextColor(255, 255, 255);
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
-        doc.text(splitDescription, 20, currentY + 2);
-        currentY += (splitDescription.length * 6) + 20;
-      }
-
-      // Totals Section
-      currentY = Math.max(currentY, 220);
-      
-      // Price Pill
-      doc.setFillColor(accentColor[0], accentColor[1], accentColor[2]);
-      doc.roundedRect(15, currentY, 180, 15, 7.5, 7.5, "F");
-      
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "bold");
-      doc.text("VALOR À VISTA", 25, currentY + 9.5);
-      
-      doc.setFontSize(14);
-      doc.text(`R$ ${quote.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, 190, currentY + 9.5, { align: "right" });
-      
-      currentY += 20;
-      
-      if (quote.installments > 1) {
-        doc.setDrawColor(40, 40, 40);
-        doc.line(15, currentY - 2, 195, currentY - 2);
-        
-        doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
-        doc.setFontSize(9);
-        doc.text(`PARCELAMENTO NO CARTÃO`, 15, currentY + 5);
-        
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(11);
-        doc.text(`${quote.installments}X DE R$ ${installmentValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, 195, currentY + 5, { align: "right" });
-      }
-
-      // Footer
-      const pageHeight = doc.internal.pageSize.height;
-      doc.setDrawColor(accentColor[0], accentColor[1], accentColor[2]);
-      doc.setLineWidth(0.5);
-      doc.line(15, pageHeight - 35, 195, pageHeight - 35);
-      
-      try {
-        doc.addImage(LOGO_URL, "PNG", 15, pageHeight - 30, 15, 15);
-      } catch (e) {}
-
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(8);
-      doc.setFont("helvetica", "bold");
-      doc.text("EASYTECH STORE", 35, pageHeight - 25);
-      
-      doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
-      doc.setFontSize(7);
-      doc.text("INSTAGRAM: @EASYTECHSTORERS", 35, pageHeight - 20);
-      doc.text("WHATSAPP: (54) 99137-0566", 35, pageHeight - 16);
-      
-      const validityDate = format(addDays(new Date(quote.date), quote.validityDays), "dd/MM/yyyy");
-      doc.setTextColor(100, 100, 100);
-      doc.text(`VALIDADE DO ORÇAMENTO: ${validityDate}`, 195, pageHeight - 20, { align: "right" });
-
-      doc.save(`Orcamento_${quote.clientName.replace(/\s+/g, "_") || "Cliente"}.pdf`);
-      
-      setToastMessage("Orçamento gerado com sucesso!");
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000);
-    } catch (error) {
-      console.error("Error generating PDF:", error);
-      alert("Erro ao gerar PDF. Verifique os dados e tente novamente.");
-    } finally {
-      setIsGenerating(false);
-    }
-  };
+    const timer = setInterval(nextSlide, 8000);
+    return () => clearInterval(timer);
+  }, [slides.length]);
 
   return (
-    <div className="min-h-screen bg-easy-dark text-white font-sans pb-20 matrix-bg">
-      {/* Header */}
-      <header className="bg-easy-dark/90 backdrop-blur-xl sticky top-0 z-40 border-b border-easy-green/20 px-6 py-3">
-        <div className="max-w-7xl mx-auto flex flex-row justify-between items-center">
-          <div className="flex items-center gap-4">
-            <div className="relative group">
-              <div className="absolute -inset-2 bg-easy-green/20 rounded-2xl blur-xl opacity-25 group-hover:opacity-60 transition duration-1000 group-hover:duration-200"></div>
-              <img 
-                src={LOGO_URL} 
-                alt="EasyTech Logo" 
-                className="relative w-28 h-28 rounded-2xl border-2 border-easy-green/40 shadow-[0_0_40px_rgba(34,197,94,0.3)] bg-easy-dark p-2"
-                referrerPolicy="no-referrer"
-              />
-            </div>
-            <div className="flex flex-col bg-black p-3 rounded-xl border border-white/10 shadow-2xl">
-              <img src={LOGO2_URL} alt="EasyTech Store" className="h-20 w-auto" referrerPolicy="no-referrer" />
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={() => setQuote(INITIAL_QUOTE)}
-              className="hidden md:flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-all hover:bg-white/5 rounded-lg"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              Limpar
-            </button>
-            
-            <div className="h-8 w-px bg-white/10 hidden md:block mx-2"></div>
-
-            <button 
-              onClick={copyToClipboard}
-              disabled={!quote.clientName}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest bg-easy-gray hover:bg-gray-800 text-white transition-all border border-white/5 disabled:opacity-20 shadow-lg"
-            >
-              <Copy className="w-3.5 h-3.5 text-easy-green" />
-              <span className="hidden sm:inline">Copiar Resumo</span>
-            </button>
-            
-            <button 
-              onClick={generatePDF}
-              disabled={isGenerating || !quote.clientName}
-              className={cn(
-                "flex items-center gap-2 px-7 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-[0_0_30px_rgba(34,197,94,0.2)] border border-easy-green/30",
-                quote.clientName 
-                  ? "bg-easy-green hover:bg-green-400 text-easy-dark cursor-pointer transform hover:scale-[1.02] active:scale-[0.98]" 
-                  : "bg-gray-900 text-gray-600 cursor-not-allowed border-gray-800"
-              )}
-            >
-              {isGenerating ? (
-                <div className="w-3.5 h-3.5 border-2 border-easy-dark/30 border-t-easy-dark rounded-full animate-spin" />
-              ) : (
-                <Download className="w-3.5 h-3.5" />
-              )}
-              {isGenerating ? "Processando..." : "Gerar Orçamento"}
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-6xl mx-auto mt-8 px-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Sidebar - Category Selection */}
-          <div className="lg:col-span-3 space-y-6">
-            <section className="bg-easy-gray/60 backdrop-blur-sm p-6 rounded-2xl border border-easy-green/10">
-              <h2 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2">
-                <Box className="w-4 h-4" /> Categoria
-              </h2>
-              <div className="space-y-2">
-                {CATEGORIES.map((cat) => (
-                  <button
-                    key={cat.id}
-                    onClick={() => handleInputChange("category", cat.id)}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all text-left uppercase tracking-widest",
-                      quote.category === cat.id 
-                        ? "bg-easy-green text-easy-dark shadow-[0_0_15px_rgba(34,197,94,0.2)] transform scale-[1.02]" 
-                        : "bg-easy-dark/40 text-gray-400 hover:bg-easy-dark/60"
-                    )}
-                  >
-                    <cat.icon className={cn("w-4 h-4", quote.category === cat.id ? "text-easy-dark" : "text-easy-green/50")} />
-                    {cat.label}
-                  </button>
-                ))}
-              </div>
-            </section>
-
-            <section className="bg-easy-gray/60 backdrop-blur-sm p-6 rounded-2xl border border-easy-green/10">
-              <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-easy-green" /> Financeiro
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-[10px] font-bold text-easy-green uppercase tracking-widest mb-1">VALOR À VISTA (R$)</label>
-                  <input 
-                    type="number" 
-                    value={quote.price || ""}
-                    onChange={(e) => handleInputChange("price", parseFloat(e.target.value) || 0)}
-                    placeholder="0,00"
-                    className="w-full px-4 py-2.5 bg-easy-dark/50 border border-easy-green/20 rounded-xl focus:ring-1 focus:ring-easy-green focus:border-transparent outline-none transition-all font-mono text-lg text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-easy-green uppercase tracking-widest mb-1">TAXA JUROS CARTÃO (%)</label>
-                  <input 
-                    type="number" 
-                    value={quote.interestRate || ""}
-                    onChange={(e) => handleInputChange("interestRate", parseFloat(e.target.value) || 0)}
-                    placeholder="0"
-                    className="w-full px-4 py-2.5 bg-easy-dark/50 border border-easy-green/20 rounded-xl focus:ring-1 focus:ring-easy-green focus:border-transparent outline-none transition-all font-mono text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-easy-green uppercase tracking-widest mb-1">PARCELAS</label>
-                  <input 
-                    type="number" 
-                    min={1}
-                    max={24}
-                    value={quote.installments || ""}
-                    onChange={(e) => handleInputChange("installments", parseInt(e.target.value) || 1)}
-                    placeholder="1"
-                    className="w-full px-4 py-2.5 bg-easy-dark/50 border border-easy-green/20 rounded-xl focus:ring-1 focus:ring-easy-green focus:border-transparent outline-none transition-all font-mono text-white"
-                  />
-                </div>
-
-                <div className="pt-4 border-t border-easy-green/10">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">TOTAL</span>
-                    <span className="text-xl font-black text-easy-green">R$ {totalPrice.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+    <section className="mb-16 relative group">
+      <div className="bg-zinc-900 rounded-[3rem] text-white relative overflow-hidden border border-zinc-800 min-h-[450px] md:min-h-[550px] flex items-center">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentIndex}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="w-full p-8 md:p-20 relative z-10 flex flex-col md:flex-row items-center gap-12"
+          >
+            {slides[currentIndex].type === 'product' ? (
+              <>
+                <div className="max-w-2xl flex-1 text-center md:text-left">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-vibrant-green/10 border border-vibrant-green/20 rounded-full text-vibrant-green text-[10px] font-bold uppercase tracking-widest mb-6">
+                    <span className="w-1.5 h-1.5 bg-vibrant-green rounded-full animate-pulse"></span>
+                    Destaque: {(slides[currentIndex].data as Product).category}
                   </div>
-                  {quote.installments > 1 && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-[9px] font-bold text-gray-600 uppercase tracking-widest">PARCELADO</span>
-                      <span className="text-xs font-bold text-white">{quote.installments}x de R$ {installmentValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-easy-green uppercase tracking-widest mb-1">VALIDADE (DIAS)</label>
-                  <select 
-                    value={quote.validityDays}
-                    onChange={(e) => handleInputChange("validityDays", parseInt(e.target.value))}
-                    className="w-full px-4 py-2.5 bg-easy-dark/50 border border-easy-green/20 rounded-xl focus:ring-1 focus:ring-easy-green outline-none text-white"
-                  >
-                    <option value={3}>3 dias</option>
-                    <option value={7}>7 dias</option>
-                    <option value={15}>15 dias</option>
-                    <option value={30}>30 dias</option>
-                  </select>
-                </div>
-              </div>
-            </section>
-          </div>
-
-          {/* Main Form Area */}
-          <div className="lg:col-span-5 space-y-6">
-            {/* Client Info */}
-            <section className="bg-easy-gray/60 backdrop-blur-sm p-8 rounded-2xl border border-easy-green/10">
-              <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 mb-6 flex items-center gap-2">
-                <User className="w-4 h-4 text-easy-green" /> Cliente
-              </h2>
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <label className="flex items-center gap-2 text-[10px] font-bold text-easy-green uppercase tracking-widest">
-                    NOME *
-                  </label>
-                  <input 
-                    type="text" 
-                    value={quote.clientName}
-                    onChange={(e) => handleInputChange("clientName", e.target.value)}
-                    placeholder="João Silva"
-                    className="w-full px-4 py-2.5 bg-easy-dark/50 border border-easy-green/20 rounded-xl focus:ring-1 focus:ring-easy-green outline-none text-white"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="flex items-center gap-2 text-[10px] font-bold text-easy-green uppercase tracking-widest">
-                    TELEFONE
-                  </label>
-                  <input 
-                    type="text" 
-                    value={quote.clientPhone}
-                    onChange={(e) => handleInputChange("clientPhone", e.target.value)}
-                    placeholder="(00) 00000-0000"
-                    className="w-full px-4 py-2.5 bg-easy-dark/50 border border-easy-green/20 rounded-xl focus:ring-1 focus:ring-easy-green outline-none text-white"
-                  />
-                </div>
-              </div>
-            </section>
-
-            {/* Dynamic Content Based on Category */}
-            <AnimatePresence mode="wait">
-              <motion.section 
-                key={quote.category}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="bg-easy-gray/60 backdrop-blur-sm p-8 rounded-2xl border border-easy-green/10"
-              >
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-easy-green" /> 
-                    {quote.category === "PC" ? "Configuração" : "Descrição"}
+                  <h2 className="text-4xl md:text-7xl font-bold mb-6 leading-[1.1] font-display tracking-tight">
+                    {(slides[currentIndex].data as Product).model}
                   </h2>
-                  
-                  <label 
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                    className={cn(
-                      "relative flex items-center gap-2 px-3 py-1.5 rounded-lg text-[9px] font-black tracking-widest transition-all cursor-pointer border border-dashed",
-                      isDragging ? "border-easy-green bg-easy-green/10 text-easy-green" : "border-easy-green/20 text-easy-green/40 hover:border-easy-green/50 hover:text-easy-green",
-                      isTranscribing && "opacity-50 cursor-wait"
-                    )}
-                  >
-                    {isTranscribing ? (
-                      <div className="w-2.5 h-2.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <Share2 className="w-2.5 h-2.5" />
-                    )}
-                    {isTranscribing ? "LENDO..." : "IA SCAN"}
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      className="hidden" 
-                      onChange={handleImageTranscription}
-                      disabled={isTranscribing}
-                    />
-                  </label>
+                  <p className="text-zinc-500 text-lg md:text-xl mb-10 max-w-lg line-clamp-2 mx-auto md:mx-0">
+                    {(slides[currentIndex].data as Product).description}
+                  </p>
+                  <div className="flex flex-wrap gap-4 justify-center md:justify-start">
+                    <button 
+                      onClick={() => onSelect(slides[currentIndex].data as Product)}
+                      className="bg-vibrant-green text-black px-8 py-4 rounded-2xl font-bold hover:bg-vibrant-green/80 transition-all flex items-center gap-2 shadow-lg shadow-vibrant-green/10"
+                    >
+                      Ver Detalhes <ChevronRight size={20} />
+                    </button>
+                    <button 
+                      onClick={() => {
+                        const el = document.getElementById('catalog');
+                        el?.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className="bg-zinc-800 text-white px-8 py-4 rounded-2xl font-bold hover:bg-zinc-700 transition-all border border-zinc-700"
+                    >
+                      Explorar Tudo
+                    </button>
+                  </div>
                 </div>
-
-                {quote.category === "PC" ? (
-                  <div className="space-y-4">
-                    {[
-                      { id: "processor", label: "PROCESSADOR", icon: Cpu },
-                      { id: "motherboard", label: "PLACA MÃE", icon: CircuitBoard },
-                      { id: "memory", label: "MEMÓRIA RAM", icon: Zap },
-                      { id: "storage", label: "ARMAZENAMENTO", icon: HardDrive },
-                      { id: "gpu", label: "PLACA DE VÍDEO", icon: Monitor },
-                      { id: "powerSupply", label: "FONTE", icon: Zap },
-                      { id: "case", label: "GABINETE", icon: Box },
-                      { id: "cooling", label: "COOLER", icon: Zap },
-                    ].map((comp) => (
-                      <div key={comp.id} className="space-y-1">
-                        <label className="flex items-center gap-2 text-[10px] font-bold text-easy-green uppercase tracking-widest">
-                          <comp.icon className="w-3 h-3" /> {comp.label}
-                        </label>
-                        <input 
-                          type="text" 
-                          value={(quote.pcComponents as any)?.[comp.id]}
-                          onChange={(e) => handlePCComponentChange(comp.id as any, e.target.value)}
-                          className="w-full px-4 py-2 bg-easy-dark/50 border border-easy-green/20 rounded-xl focus:ring-1 focus:ring-easy-green outline-none text-white text-sm"
-                        />
+                <div className="flex-1 flex justify-center items-center">
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.2, duration: 0.5 }}
+                    className="relative"
+                  >
+                    <img 
+                      src={(slides[currentIndex].data as Product).image} 
+                      alt={(slides[currentIndex].data as Product).model} 
+                      className="w-full max-w-[280px] md:max-w-md h-auto object-contain drop-shadow-[0_0_50px_rgba(0,255,65,0.15)] rounded-3xl" 
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-0 bg-vibrant-green/5 blur-[80px] -z-10 rounded-full"></div>
+                  </motion.div>
+                </div>
+              </>
+            ) : slides[currentIndex].type === 'services' ? (
+              <>
+                <div className="max-w-2xl flex-1 text-center md:text-left">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-400 text-[10px] font-bold uppercase tracking-widest mb-6">
+                    <Cpu size={12} />
+                    {slides[currentIndex].data.subtitle}
+                  </div>
+                  <h2 className="text-4xl md:text-7xl font-bold mb-6 leading-[1.1] font-display tracking-tight">
+                    {slides[currentIndex].data.title}
+                  </h2>
+                  <p className="text-zinc-500 text-lg md:text-xl mb-10 max-w-lg mx-auto md:mx-0">
+                    {slides[currentIndex].data.description}
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
+                    {slides[currentIndex].data.items.map((item: string) => (
+                      <div key={item} className="flex items-center gap-3 text-zinc-300 text-sm">
+                        <div className="w-5 h-5 rounded-full bg-vibrant-green/20 flex items-center justify-center text-vibrant-green">
+                          <Check size={12} />
+                        </div>
+                        {item}
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-easy-green uppercase tracking-widest">DESCRIÇÃO DETALHADA</label>
-                      <textarea 
-                        rows={8}
-                        value={quote.description}
-                        onChange={(e) => handleInputChange("description", e.target.value)}
-                        className="w-full px-4 py-3 bg-easy-dark/50 border border-easy-green/20 rounded-xl focus:ring-1 focus:ring-easy-green outline-none resize-none text-white text-sm"
+                  <button 
+                    onClick={() => window.open('https://wa.me/5554991370566?text=Olá! Gostaria de saber mais sobre os serviços de assistência e montagem.', '_blank')}
+                    className="bg-white text-black px-8 py-4 rounded-2xl font-bold hover:bg-zinc-200 transition-all flex items-center gap-2 shadow-xl shadow-white/5 mx-auto md:mx-0"
+                  >
+                    Solicitar Orçamento <MessageCircle size={20} />
+                  </button>
+                </div>
+                <div className="flex-1 flex justify-center items-center">
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.2, duration: 0.5 }}
+                    className="relative grid grid-cols-2 gap-4"
+                  >
+                    <div className="space-y-4">
+                      <div className="bg-zinc-800/50 p-6 rounded-[2rem] border border-zinc-700/50 backdrop-blur-sm">
+                        <Smartphone className="text-vibrant-green mb-4" size={32} />
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Smartphones</p>
+                      </div>
+                      <div className="bg-zinc-800/50 p-6 rounded-[2rem] border border-zinc-700/50 backdrop-blur-sm">
+                        <Cpu className="text-blue-400 mb-4" size={32} />
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">PC Gamer</p>
+                      </div>
+                    </div>
+                    <div className="pt-8 space-y-4">
+                      <div className="bg-zinc-800/50 p-6 rounded-[2rem] border border-zinc-700/50 backdrop-blur-sm">
+                        <Laptop className="text-purple-400 mb-4" size={32} />
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Notebooks</p>
+                      </div>
+                      <div className="bg-zinc-800/50 p-6 rounded-[2rem] border border-zinc-700/50 backdrop-blur-sm">
+                        <Tablet className="text-orange-400 mb-4" size={32} />
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Consoles</p>
+                      </div>
+                    </div>
+                    {/* Decorative glow */}
+                    <div className="absolute inset-0 bg-blue-500/5 blur-[100px] -z-10 rounded-full"></div>
+                  </motion.div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="max-w-2xl flex-1 text-center md:text-left">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-pink-500/10 border border-pink-500/20 rounded-full text-pink-500 text-[10px] font-bold uppercase tracking-widest mb-6">
+                    <Instagram size={12} />
+                    Social Media
+                  </div>
+                  <h2 className="text-4xl md:text-7xl font-bold mb-6 leading-[1.1] font-display tracking-tight">
+                    Siga-nos no <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500">Instagram</span>
+                  </h2>
+                  <p className="text-zinc-400 text-xl font-bold mb-2">@easytechstorers</p>
+                  <p className="text-zinc-500 text-lg mb-10 max-w-lg mx-auto md:mx-0">
+                    {slides[currentIndex].data.description}
+                  </p>
+                  <button 
+                    onClick={() => window.open('https://www.instagram.com/easytechstorers', '_blank')}
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-2xl font-bold hover:opacity-90 transition-all flex items-center gap-2 shadow-xl shadow-pink-500/20 mx-auto md:mx-0"
+                  >
+                    Seguir Agora <Instagram size={20} />
+                  </button>
+                </div>
+                <div className="flex-1 flex justify-center items-center">
+                  <motion.div
+                    initial={{ y: 50, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.2, duration: 0.5 }}
+                    className="relative cursor-pointer group/insta"
+                    onClick={() => window.open('https://www.instagram.com/easytechstorers', '_blank')}
+                  >
+                    {/* Smartphone Frame */}
+                    <div className="relative w-[260px] h-[520px] bg-zinc-800 rounded-[3rem] border-[8px] border-zinc-700 shadow-2xl overflow-hidden">
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-zinc-700 rounded-b-2xl z-20"></div>
+                      <img 
+                        src={slides[currentIndex].data.image} 
+                        alt="Instagram Preview" 
+                        className="w-full h-full object-cover group-hover/insta:scale-105 transition-transform duration-700"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/insta/400/800';
+                        }}
                       />
+                      <div className="absolute inset-0 bg-black/20 group-hover/insta:bg-transparent transition-colors"></div>
                     </div>
-                  </div>
-                )}
-              </motion.section>
-            </AnimatePresence>
+                    {/* Decorative glow */}
+                    <div className="absolute inset-0 bg-pink-500/10 blur-[100px] -z-10 rounded-full"></div>
+                  </motion.div>
+                </div>
+              </>
+            )}
+          </motion.div>
+        </AnimatePresence>
 
-            {/* Payment & Notes */}
-            <section className="bg-easy-gray/60 backdrop-blur-sm p-8 rounded-2xl border border-easy-green/10">
-              <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500 mb-6 flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-easy-green" /> Observações
-              </h2>
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-easy-green uppercase tracking-widest">PAGAMENTO</label>
-                  <input 
-                    type="text" 
-                    value={quote.paymentTerms}
-                    onChange={(e) => handleInputChange("paymentTerms", e.target.value)}
-                    className="w-full px-4 py-2.5 bg-easy-dark/50 border border-easy-green/20 rounded-xl focus:ring-1 focus:ring-easy-green outline-none text-white text-sm"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-easy-green uppercase tracking-widest">NOTAS</label>
-                  <textarea 
-                    rows={3}
-                    value={quote.notes}
-                    onChange={(e) => handleInputChange("notes", e.target.value)}
-                    className="w-full px-4 py-3 bg-easy-dark/50 border border-easy-green/20 rounded-xl focus:ring-1 focus:ring-easy-green outline-none resize-none text-white text-sm"
-                  />
-                </div>
-              </div>
-            </section>
-          </div>
+        {/* Navigation Arrows */}
+        <button 
+          onClick={prevSlide}
+          className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/20 backdrop-blur border border-white/5 flex items-center justify-center text-white/50 hover:text-white hover:bg-black/40 transition-all z-30 opacity-0 group-hover:opacity-100"
+        >
+          <ChevronLeft size={24} />
+        </button>
+        <button 
+          onClick={nextSlide}
+          className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/20 backdrop-blur border border-white/5 flex items-center justify-center text-white/50 hover:text-white hover:bg-black/40 transition-all z-30 opacity-0 group-hover:opacity-100"
+        >
+          <ChevronRight size={24} />
+        </button>
 
-          {/* PDF Preview Area */}
-          <div className="lg:col-span-4 sticky top-24 h-fit">
-            <div className="bg-easy-dark rounded-3xl border border-easy-green/30 overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] relative">
-              {/* Matrix Background Pattern */}
-              <div className="absolute inset-0 opacity-15 pointer-events-none" style={{ backgroundImage: `url(${BG_URL})`, backgroundSize: 'cover' }}></div>
-              <div className="absolute inset-0 bg-gradient-to-b from-easy-dark/40 via-easy-dark/90 to-easy-dark pointer-events-none"></div>
-              
-              <div className="relative p-10 min-h-[700px] flex flex-col">
-                {/* PDF Header */}
-                <div className="flex justify-between items-start mb-14">
-                  <div className="flex items-center gap-6">
-                    <div className="relative">
-                      <div className="absolute -inset-2 bg-easy-green/10 rounded-xl blur-lg"></div>
-                      <img src={LOGO_URL} alt="Logo" className="relative w-24 h-24 rounded-xl border border-easy-green/20" referrerPolicy="no-referrer" />
-                    </div>
-                    <div className="flex flex-col bg-black p-3 rounded-xl border border-white/10 shadow-lg">
-                      <img src={LOGO2_URL} alt="EasyTech Store" className="h-14 w-auto" referrerPolicy="no-referrer" />
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[9px] font-black text-easy-green uppercase tracking-[0.2em] mb-1">Orçamento</div>
-                    <div className="text-sm font-black text-white">{format(new Date(quote.date), "dd/MM/yyyy")}</div>
-                  </div>
-                </div>
+        {/* Navigation Dots */}
+        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-3 z-20">
+          {slides.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setCurrentIndex(idx)}
+              className={`h-1.5 transition-all duration-300 rounded-full ${
+                idx === currentIndex ? 'w-8 bg-vibrant-green' : 'w-2 bg-zinc-700 hover:bg-zinc-600'
+              }`}
+            />
+          ))}
+        </div>
 
-                {/* Client Info Bar */}
-                <div className="bg-white/5 border-y border-white/10 py-3 mb-8 flex justify-between px-2">
-                  <div>
-                    <div className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Cliente</div>
-                    <div className="text-[10px] font-bold text-white uppercase">{quote.clientName || "Selecione um cliente"}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Data</div>
-                    <div className="text-[10px] font-bold text-white">{format(new Date(quote.date), "dd/MM/yyyy")}</div>
-                  </div>
-                </div>
+        {/* Abstract background element */}
+        <div className="absolute -top-20 -right-20 w-[500px] h-[500px] bg-vibrant-green/5 blur-[120px] rounded-full pointer-events-none"></div>
+        <div className="absolute -bottom-40 -left-40 w-[600px] h-[600px] bg-zinc-900/50 blur-[150px] rounded-full pointer-events-none"></div>
+      </div>
+    </section>
+  );
+};
 
-                {/* PDF Content */}
-                <div className="flex-grow space-y-1">
-                  {quote.category === "PC" && quote.pcComponents ? (
-                    <>
-                      {[
-                        { id: "processor", label: "PROCESSADOR", icon: Cpu, value: quote.pcComponents.processor },
-                        { id: "memory", label: "MEMÓRIA RAM", icon: Zap, value: quote.pcComponents.memory },
-                        { id: "motherboard", label: "PLACA MÃE", icon: CircuitBoard, value: quote.pcComponents.motherboard },
-                        { id: "gpu", label: "PLACA DE VÍDEO", icon: Monitor, value: quote.pcComponents.gpu || "INTEGRADA" },
-                        { id: "powerSupply", label: "FONTE REAL", icon: Zap, value: quote.pcComponents.powerSupply },
-                        { id: "case", label: "GABINETE GAMER", icon: Box, value: quote.pcComponents.case },
-                        { id: "storage", label: "ARMAZENAMENTO", icon: HardDrive, value: quote.pcComponents.storage },
-                      ].filter(c => c.value).map((item) => (
-                        <div key={item.id} className="pdf-item-box">
-                          <div className="pdf-icon-container">
-                            <item.icon className="w-5 h-5 text-easy-green" />
-                          </div>
-                          <div className="flex-grow">
-                            <div className="pdf-item-label">{item.label}</div>
-                            <div className="pdf-item-value">{item.value}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </>
-                  ) : (
-                    <div className="space-y-6">
-                      <div className="flex items-center gap-3">
-                        <div className="h-px flex-grow bg-easy-green/20"></div>
-                        <div className="text-easy-green font-black uppercase tracking-[0.2em] text-[10px]">Descrição do Item</div>
-                        <div className="h-px flex-grow bg-easy-green/20"></div>
-                      </div>
-                      <div className="text-white font-bold text-sm leading-relaxed opacity-90 whitespace-pre-wrap bg-white/5 p-6 rounded-2xl border border-white/5">
-                        {quote.description || "Nenhuma descrição informada."}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* PDF Prices */}
-                <div className="mt-12 space-y-4">
-                  <div className="flex justify-between items-center">
-                    <div className="pdf-price-pill">
-                      VALOR À VISTA
-                    </div>
-                    <div className="text-2xl font-black text-white">
-                      R$ {quote.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                    </div>
-                  </div>
-                  
-                  {quote.installments > 1 && (
-                    <div className="flex justify-between items-center border-t border-white/10 pt-4">
-                      <div className="text-[10px] font-black text-easy-green uppercase tracking-[0.2em]">
-                        PARCELAMENTO ({quote.installments}X)
-                      </div>
-                      <div className="text-base font-black text-white/80">
-                        {quote.installments}X DE R$ {installmentValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* PDF Footer Logo */}
-                <div className="mt-14 pt-8 border-t border-white/5 flex flex-col items-start gap-2">
-                   <div className="flex items-center gap-3">
-                      <img src={LOGO_URL} alt="Logo" className="w-10 h-10" referrerPolicy="no-referrer" />
-                      <div className="flex flex-col">
-                        <span className="text-[10px] font-black tracking-tighter text-white">EASYTECH STORE</span>
-                        <span className="text-[8px] font-bold text-easy-green uppercase tracking-widest">Instagram: @easytechstorers</span>
-                        <span className="text-[8px] font-bold text-easy-green uppercase tracking-widest">WhatsApp: 54-991370566</span>
-                      </div>
-                   </div>
-                   <div className="w-full text-right mt-2">
-                     <div className="text-[8px] font-bold text-gray-600 uppercase tracking-[0.2em]">
-                       Validade: {format(addDays(new Date(quote.date), quote.validityDays), "dd/MM/yyyy")}
-                     </div>
-                   </div>
-                </div>
-              </div>
-            </div>
-            
-            <p className="text-center text-[10px] font-bold text-gray-600 uppercase tracking-[0.2em] mt-4">
-              Visualização em Tempo Real
-            </p>
+const ProductCard = ({ product, onClick }: { product: Product; onClick: () => void; key?: string }) => {
+  return (
+    <motion.div 
+      layoutId={`card-${product.id}`}
+      onClick={onClick}
+      className="group cursor-pointer card-gradient rounded-3xl overflow-hidden"
+    >
+      <div className="aspect-square overflow-hidden bg-zinc-900 relative">
+        <img 
+          src={product.image} 
+          alt={product.model}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100"
+          referrerPolicy="no-referrer"
+        />
+        <div className="absolute top-4 right-4 bg-vibrant-green border border-vibrant-green px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-black shadow-lg shadow-vibrant-green/20">
+          {product.category}
+        </div>
+      </div>
+      <div className="p-6">
+        <h3 className="text-lg font-semibold text-zinc-100 mb-1 group-hover:text-vibrant-green transition-colors">{product.model}</h3>
+        <p className="text-sm text-zinc-500 line-clamp-2 mb-4">{product.description}</p>
+        <div className="flex items-center justify-between">
+          <span className="text-xl font-bold text-zinc-100">
+            <span className="text-[10px] font-normal text-zinc-500 mr-1">À partir de</span>
+            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.basePrice)}
+          </span>
+          <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-400 group-hover:bg-vibrant-green group-hover:text-black transition-all">
+            <ArrowRight size={18} />
           </div>
         </div>
+      </div>
+    </motion.div>
+  );
+};
+
+const ProductModal = ({ product, onClose }: { product: Product; onClose: () => void }) => {
+  const [selectedColor, setSelectedColor] = useState(product.colors[0]);
+  const [selectedStorage, setSelectedStorage] = useState(product.storage[0]);
+
+  const currentPrice = product.storagePrices && product.storagePrices[selectedStorage] 
+    ? product.storagePrices[selectedStorage] 
+    : product.basePrice;
+
+  const currentImage = (product.storageImages && product.storageImages[selectedStorage]) ||
+    (product.colorImages && product.colorImages[selectedColor]) ||
+    product.image;
+
+  const handleOrder = () => {
+    const message = `Olá Easy Tech! Gostaria de encomendar:\n\n*Produto:* ${product.model}\n*Cor:* ${selectedColor}\n*Armazenamento:* ${selectedStorage}\n*Preço:* ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(currentPrice)}\n\nEstá disponível?`;
+    const encodedMessage = encodeURIComponent(message);
+    window.open(`https://wa.me/5554991370566?text=${encodedMessage}`, '_blank');
+  };
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8 bg-black/80 backdrop-blur-md"
+      onClick={onClose}
+    >
+      <motion.div 
+        layoutId={`card-${product.id}`}
+        className="bg-zinc-950 w-full max-w-4xl rounded-[2.5rem] overflow-hidden border border-zinc-800 shadow-2xl flex flex-col md:flex-row max-h-[90vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="md:w-1/2 bg-zinc-900 relative">
+          <AnimatePresence mode="wait">
+            <motion.img 
+              key={currentImage}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              src={currentImage} 
+              alt={product.model}
+              className="w-full h-full object-contain p-8 opacity-90"
+              referrerPolicy="no-referrer"
+            />
+          </AnimatePresence>
+          <button 
+            onClick={onClose}
+            className="absolute top-6 left-6 w-10 h-10 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white hover:bg-vibrant-green transition-colors"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="md:w-1/2 p-8 md:p-12 overflow-y-auto">
+          <div className="mb-8">
+            <span className="text-xs font-bold uppercase tracking-widest text-vibrant-green mb-2 block">
+              {product.category}
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold text-zinc-100 mb-4">{product.model}</h2>
+            <p className="text-zinc-400 leading-relaxed">{product.description}</p>
+          </div>
+
+          <div className="space-y-8">
+            {/* Color Selection */}
+            <div>
+              <h4 className="text-[10px] font-bold text-zinc-500 mb-4 uppercase tracking-[0.2em]">Cor</h4>
+              <div className="flex flex-wrap gap-2">
+                {product.colors.map(color => (
+                  <button
+                    key={color}
+                    onClick={() => setSelectedColor(color)}
+                    className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all border ${
+                      selectedColor === color 
+                        ? 'bg-vibrant-green border-vibrant-green text-black shadow-[0_0_20px_rgba(0,255,65,0.2)]' 
+                        : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                    }`}
+                  >
+                    {color}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Storage Selection */}
+            <div>
+              <h4 className="text-[10px] font-bold text-zinc-500 mb-4 uppercase tracking-[0.2em]">Capacidade</h4>
+              <div className="flex flex-wrap gap-2">
+                {product.storage.map(size => (
+                  <button
+                    key={size}
+                    onClick={() => setSelectedStorage(size)}
+                    className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all border ${
+                      selectedStorage === size 
+                        ? 'bg-vibrant-green border-vibrant-green text-black shadow-[0_0_20px_rgba(0,255,65,0.2)]' 
+                        : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-700'
+                    }`}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Price and Action */}
+            <div className="pt-8 border-t border-zinc-800 space-y-6">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+                <div>
+                  <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block mb-1">Investimento</span>
+                  <span className="text-3xl font-bold text-zinc-100">
+                    <span className="text-sm font-normal text-zinc-500 mr-2">À partir de</span>
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(currentPrice)}
+                  </span>
+                </div>
+                <button 
+                  onClick={handleOrder}
+                  className="w-full sm:w-auto bg-vibrant-green hover:bg-vibrant-green/80 text-black px-8 py-4 rounded-2xl font-bold flex items-center justify-center gap-3 transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-vibrant-green/20"
+                >
+                  <MessageCircle size={20} />
+                  WhatsApp
+                </button>
+              </div>
+
+              {product.note && (
+                <div className="bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800/50">
+                  <p className="text-[10px] text-zinc-500 leading-relaxed italic">
+                    * {product.note}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+export default function App() {
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState<string>('Home');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const categories = ['Home', 'iPhone', 'iPad', 'MacBook', 'Xiaomi', 'Consoles'];
+
+  const filteredProducts = useMemo(() => {
+    return PRODUCTS.filter(p => {
+      const searchLower = searchQuery.toLowerCase();
+      const matchesSearch = p.model.toLowerCase().includes(searchLower) || 
+                           p.description.toLowerCase().includes(searchLower) ||
+                           p.category.toLowerCase().includes(searchLower);
+      const matchesCategory = activeCategory === 'Home' || p.category === activeCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [searchQuery, activeCategory]);
+
+  return (
+    <div className="min-h-screen pb-20 bg-zinc-950">
+      {/* Header */}
+      <header className="sticky top-0 z-40 glass">
+        <div className="max-w-7xl mx-auto px-6 h-20 md:h-[95px] flex items-center justify-between gap-4">
+          <div className="flex items-center gap-8">
+            <img 
+              src="/logos/Logo.png" 
+              alt="Easy Tech" 
+              className="h-14 md:h-[85px] w-auto object-contain brightness-110 contrast-110 cursor-pointer" 
+              referrerPolicy="no-referrer"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            />
+            
+            {/* Desktop Category Menu */}
+            <nav className="hidden lg:flex items-center gap-6">
+              {categories.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => {
+                    setActiveCategory(cat);
+                    document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className={`text-[10px] font-bold uppercase tracking-[0.2em] transition-all hover:text-vibrant-green ${
+                    activeCategory === cat ? 'text-vibrant-green' : 'text-zinc-500'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </nav>
+          </div>
+          
+          <div className="hidden md:flex items-center bg-zinc-900 border border-zinc-800 px-4 py-2 rounded-full flex-1 max-w-md">
+            <Search size={18} className="text-zinc-500 mr-2" />
+            <input 
+              type="text" 
+              placeholder="O que você procura?" 
+              className="bg-transparent border-none focus:ring-0 text-sm w-full text-zinc-100 placeholder:text-zinc-600"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          <div className="flex items-center gap-2 md:gap-4">
+            <button 
+              onClick={() => window.open('https://www.instagram.com/easytechstorers', '_blank')}
+              className="p-2.5 text-zinc-400 hover:text-pink-500 transition-all bg-zinc-900/50 border border-zinc-800 rounded-xl"
+              title="Instagram"
+            >
+              <Instagram size={20} />
+            </button>
+            <button 
+              onClick={() => window.open('https://wa.me/5554991370566', '_blank')}
+              className="p-2.5 text-zinc-400 hover:text-vibrant-green transition-all bg-zinc-900/50 border border-zinc-800 rounded-xl"
+              title="WhatsApp"
+            >
+              <MessageCircle size={20} />
+            </button>
+            
+            {/* Mobile Menu Toggle */}
+            <button 
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="md:hidden p-2.5 text-zinc-400 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:text-vibrant-green transition-colors"
+            >
+              <Menu size={20} />
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Menu Drawer */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <>
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+              />
+              <motion.div 
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                className="fixed top-0 right-0 bottom-0 w-80 bg-zinc-950/80 backdrop-blur-xl border-l border-zinc-800 z-50 p-8 flex flex-col"
+              >
+                <div className="flex items-center justify-between mb-12">
+                  <span className="text-xs font-bold uppercase tracking-widest text-zinc-500">Menu</span>
+                  <button 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-white"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <nav className="flex flex-col gap-6">
+                  {categories.map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => {
+                        setActiveCategory(cat);
+                        setIsMobileMenuOpen(false);
+                        document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className={`text-2xl font-bold tracking-tight text-left transition-all ${
+                        activeCategory === cat ? 'text-vibrant-green' : 'text-zinc-400 hover:text-zinc-100'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </nav>
+
+                <div className="mt-auto pt-12 border-t border-zinc-900">
+                  <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-6">Redes Sociais</p>
+                  <div className="flex gap-4">
+                    <button 
+                      onClick={() => window.open('https://www.instagram.com/easytechstorers', '_blank')}
+                      className="flex-1 bg-zinc-900 border border-zinc-800 p-4 rounded-2xl flex items-center justify-center text-zinc-400 hover:text-pink-500 transition-all"
+                    >
+                      <Instagram size={24} />
+                    </button>
+                    <button 
+                      onClick={() => window.open('https://wa.me/5554991370566', '_blank')}
+                      className="flex-1 bg-zinc-900 border border-zinc-800 p-4 rounded-2xl flex items-center justify-center text-zinc-400 hover:text-vibrant-green transition-all"
+                    >
+                      <MessageCircle size={24} />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-6 pt-12">
+        {/* Dynamic Hero Banner */}
+        <DynamicBanner products={PRODUCTS} onSelect={setSelectedProduct} />
+
+        {/* Filters and Search (Mobile) */}
+        <section id="catalog" className="mb-12 space-y-6">
+          <div className="md:hidden flex items-center bg-zinc-900 border border-zinc-800 px-4 py-3 rounded-2xl">
+            <Search size={18} className="text-zinc-500 mr-2" />
+            <input 
+              type="text" 
+              placeholder="Buscar modelos..." 
+              className="bg-transparent border-none focus:ring-0 text-sm w-full text-zinc-100"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          <div className="flex items-center gap-3 overflow-x-auto pb-2 no-scrollbar">
+            <div className="p-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-500">
+              <Filter size={18} />
+            </div>
+            {categories.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`whitespace-nowrap px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all border ${
+                  activeCategory === cat 
+                    ? 'bg-vibrant-green border-vibrant-green text-black shadow-lg shadow-vibrant-green/20' 
+                    : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-700'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* Product Grid */}
+        <section>
+          <div className="flex items-center justify-between mb-10">
+            <div className="flex items-center gap-4">
+              <h3 className="text-2xl font-bold text-zinc-100 font-display">Disponíveis</h3>
+              <div className="h-px w-12 bg-zinc-800"></div>
+            </div>
+            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{filteredProducts.length} itens</span>
+          </div>
+
+          {filteredProducts.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredProducts.map(product => (
+                <ProductCard 
+                  key={product.id} 
+                  product={product} 
+                  onClick={() => setSelectedProduct(product)} 
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-24 bg-zinc-900/50 rounded-[3rem] border border-zinc-800 border-dashed">
+              <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-6 text-zinc-700 border border-zinc-800">
+                <Search size={32} />
+              </div>
+              <h4 className="text-lg font-semibold text-zinc-100">Nenhum item encontrado</h4>
+              <p className="text-zinc-500 text-sm">Tente mudar os filtros ou a busca.</p>
+            </div>
+          )}
+        </section>
       </main>
 
-      {/* Success Toast */}
+      {/* Footer Info */}
+      <footer className="mt-32 border-t border-zinc-900 pt-16 pb-20">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-16">
+          <div>
+            <div className="flex items-center gap-3 mb-8">
+              <img 
+                src="/logos/Logo.png" 
+                alt="Easy Tech" 
+                className="h-12 md:h-16 w-auto object-contain brightness-110" 
+                referrerPolicy="no-referrer"
+              />
+            </div>
+            <p className="text-zinc-500 text-sm leading-relaxed max-w-xs">
+              O melhor do mundo da tecnologia você encontra aqui. Inovação, performance e confiança em cada detalhe.
+            </p>
+          </div>
+          <div>
+            <h4 className="text-[10px] font-bold text-zinc-100 uppercase tracking-[0.2em] mb-8">Categorias</h4>
+            <ul className="space-y-4 text-sm text-zinc-500">
+              <li className="hover:text-vibrant-green transition-colors cursor-pointer">Apple iPhone</li>
+              <li className="hover:text-vibrant-green transition-colors cursor-pointer">Apple MacBook</li>
+              <li className="hover:text-vibrant-green transition-colors cursor-pointer">Apple iPad</li>
+              <li className="hover:text-vibrant-green transition-colors cursor-pointer">Xiaomi & Redmi</li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="text-[10px] font-bold text-zinc-100 uppercase tracking-[0.2em] mb-8">Atendimento</h4>
+            <p className="text-zinc-500 text-sm mb-6">Fale com um especialista agora.</p>
+            <button 
+              onClick={() => window.open('https://wa.me/5554991370566', '_blank')}
+              className="flex items-center gap-3 text-vibrant-green font-bold hover:text-vibrant-green/80 transition-colors group"
+            >
+              <div className="w-10 h-10 rounded-full bg-vibrant-green/10 flex items-center justify-center group-hover:bg-vibrant-green/20">
+                <MessageCircle size={20} />
+              </div>
+              (54) 99137-0566
+            </button>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto px-6 mt-20 pt-8 border-t border-zinc-900 flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-[10px] text-zinc-700 uppercase tracking-widest">© 2026 Easy Tech Store. All rights reserved.</p>
+          <div className="flex gap-6">
+             <div className="w-1.5 h-1.5 bg-vibrant-green rounded-full"></div>
+             <div className="w-1.5 h-1.5 bg-zinc-800 rounded-full"></div>
+             <div className="w-1.5 h-1.5 bg-zinc-800 rounded-full"></div>
+          </div>
+        </div>
+      </footer>
+
+      {/* Product Detail Modal */}
       <AnimatePresence>
-        {showSuccess && (
-          <motion.div 
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#141414] text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 z-50"
-          >
-            <CheckCircle2 className="w-5 h-5 text-[#22C55E]" />
-            <span className="font-medium">{toastMessage}</span>
-          </motion.div>
+        {selectedProduct && (
+          <ProductModal 
+            product={selectedProduct} 
+            onClose={() => setSelectedProduct(null)} 
+          />
         )}
       </AnimatePresence>
     </div>
