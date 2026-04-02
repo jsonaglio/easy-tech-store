@@ -363,7 +363,7 @@ const PRODUCTS: Product[] = [
     id: '16',
     model: 'MacBook Air M1 (2020) 13,1"',
     description: 'O chip M1 redefine o notebook mais fino e leve da Apple.',
-    basePrice: 4899.90,
+    basePrice: 5199.90,
     image: '/Macbook Air M1/MacbookAirm1-SpaceGray.webp',
     colors: ['Space Gray'],
     colorImages: {
